@@ -1,0 +1,25 @@
+{
+  "git_url": "https://github.com/OCR-D/ocrd_calamari",
+  "version": "0.0.1",
+  "tools": {
+    "ocrd-calamari-ocr": {
+      "executable": "ocrd-calamari-ocr",
+      "categories": [
+        "Text recognition and optimization"
+      ],
+      "steps": [
+        "recognition/text-recognition"
+      ],
+      "description": "Recognize lines with kraken",
+      "parameters": {
+        "checkpoint": {"type": "string", "format": "file", "cacheable": true},
+        "processes": {"type": "number", "default": 1},
+        "batch_size": {"type": "number", "default": 1},
+        "voter": {"type": "string", "default": "confidence_voter_default_ctc"},
+        "extended_prediction_data_format": {"type": "string", "default": "json"},
+        "XXX output_dir": "TODO",
+        "XXX extended_prediction_data": "TODO"
+      }
+    }
+  }
+}
