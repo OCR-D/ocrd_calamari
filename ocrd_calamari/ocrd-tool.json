@@ -10,13 +10,19 @@
       "steps": [
         "recognition/text-recognition"
       ],
-      "description": "Recognize lines with kraken",
+      "description": "Recognize lines with Calamari",
+      "input_file_grp": [
+        "OCR-D-SEG-LINE"
+      ],
+      "output_file_grp": [
+        "OCR-D-OCR-CALAMARI"
+      ],
       "parameters": {
-        "checkpoint": {"type": "string", "format": "file", "cacheable": true},
+        "XXX checkpoint": {"type": "string", "format": "file", "cacheable": true},
         "processes": {"type": "number", "default": 1},
         "batch_size": {"type": "number", "default": 1},
-        "voter": {"type": "string", "default": "confidence_voter_default_ctc"},
-        "extended_prediction_data_format": {"type": "string", "default": "json"},
+        "XXX voter": {"type": "string", "default": "confidence_voter_default_ctc"},
+        "XXXX extended_prediction_data_format": {"type": "string", "default": "json"},
         "XXX output_dir": "TODO",
         "XXX extended_prediction_data": "TODO"
       }

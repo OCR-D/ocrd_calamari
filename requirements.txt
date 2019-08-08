@@ -1,0 +1,4 @@
+calamari-ocr
+tensorflow-gpu
+click
+ocrd
