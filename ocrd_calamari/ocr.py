@@ -14,7 +14,7 @@ from ocrd_models.ocrd_page import to_xml
 from ocrd_models.ocrd_page_generateds import TextEquivType
 from ocrd_utils import getLogger, concat_padded, polygon_from_points, MIMETYPE_PAGE
 
-from ocrd_calamari.config import OCRD_TOOL
+from ocrd_calamari.config import OCRD_TOOL, TF_CPP_MIN_LOG_LEVEL
 
 log = getLogger('processor.CalamariOcr')
 
@@ -28,6 +28,8 @@ class CalamariOcr(Processor):
         super(CalamariOcr, self).__init__(*args, **kwargs)
 
     def _init_calamari(self):
+        os.environ['TF_CPP_MIN_LOG_LEVEL'] = TF_CPP_MIN_LOG_LEVEL
+
         checkpoints = glob('/home/mike/devel/experiments/train-calamari-gt4histocr/models/*.ckpt.json')  # XXX
         self.predictor = MultiPredictor(checkpoints=checkpoints)
 
