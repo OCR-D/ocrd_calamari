@@ -1,3 +1,4 @@
+numpy
 calamari-ocr
 tensorflow-gpu
 click

@@ -24,7 +24,6 @@ class CalamariOcr(Processor):
         kwargs['ocrd_tool'] = OCRD_TOOL['tools']['ocrd-calamari-ocr']
         super(CalamariOcr, self).__init__(*args, **kwargs)
 
-
     def _init_calamari(self):
         checkpoints = glob('/home/mike/devel/experiments/train-calamari-gt4histocr/models/*.ckpt.json')  # XXX
         self.predictor = MultiPredictor(checkpoints=checkpoints)
@@ -33,6 +32,8 @@ class CalamariOcr(Processor):
         voter_params.type = VoterParams.Type.Value('confidence_voter_default_ctc'.upper())
         self.voter = voter_from_proto(voter_params)
 
+    def resolve_image_as_np(self, image_url, coords):
+        return np.array(self.workspace.resolve_image_as_pil(image_url, coords), dtype=np.uint8)
 
     def process(self):
         """
@@ -51,12 +52,10 @@ class CalamariOcr(Processor):
                 log.info("About to recognize %i lines of region '%s'", len(textlines), region.id)
                 for (line_no, line) in enumerate(textlines):
                     log.debug("Recognizing line '%s' in region '%s'", line_no, region.id)
-                    image = self.workspace.resolve_image_as_pil(image_url,
-                                                                polygon_from_points(line.get_Coords().points))
-                    image_np = np.array(image, dtype=np.uint8)  # XXX better way?
 
-                    raw_results = list(self.predictor.predict_raw([image_np], progress_bar=False))[0]
+                    image = self.resolve_image_as_np(image_url, polygon_from_points(line.get_Coords().points))
 
+                    raw_results = list(self.predictor.predict_raw([image], progress_bar=False))[0]
                     for i, p in enumerate(raw_results):
                         p.prediction.id = "fold_{}".format(i)
 
