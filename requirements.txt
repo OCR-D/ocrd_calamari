@@ -2,4 +2,4 @@ numpy
 calamari-ocr
 tensorflow-gpu
 click
-ocrd
+ocrd >= 1.0.0b11

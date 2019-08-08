@@ -7,12 +7,12 @@ import numpy as np
 from calamari_ocr.ocr import MultiPredictor
 from calamari_ocr.ocr.voting import voter_from_proto
 from calamari_ocr.proto import VoterParams
-from ocrd import Processor, MIMETYPE_PAGE
-from ocrd.logging import getLogger
-from ocrd.model import ocrd_page
-from ocrd.model.ocrd_page import to_xml
-from ocrd.model.ocrd_page_generateds import TextEquivType
-from ocrd.utils import polygon_from_points, concat_padded
+from ocrd import Processor
+from ocrd_modelfactory import page_from_file
+from ocrd_models import ocrd_page
+from ocrd_models.ocrd_page import to_xml
+from ocrd_models.ocrd_page_generateds import TextEquivType
+from ocrd_utils import getLogger, concat_padded, polygon_from_points, MIMETYPE_PAGE
 
 from ocrd_calamari.config import OCRD_TOOL
 
@@ -53,7 +53,7 @@ class CalamariOcr(Processor):
 
         for (n, input_file) in enumerate(self.input_files):
             log.info("INPUT FILE %i / %s", n, input_file)
-            pcgts = ocrd_page.from_file(self.workspace.download_file(input_file))
+            pcgts = page_from_file(self.workspace.download_file(input_file))
             image_url = pcgts.get_Page().imageFilename
             log.info("pcgts %s", pcgts)
             for region in pcgts.get_Page().get_TextRegion():
