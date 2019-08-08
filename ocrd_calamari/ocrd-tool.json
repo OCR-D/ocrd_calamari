@@ -19,11 +19,7 @@
       ],
       "parameters": {
         "XXX checkpoint": {"type": "string", "format": "file", "cacheable": true},
-        "processes": {"type": "number", "default": 1},
-        "batch_size": {"type": "number", "default": 1},
-        "voter": {"type": "string", "default": "confidence_voter_default_ctc"},
-        "XXXX extended_prediction_data_format": {"type": "string", "default": "json"},
-        "XXX extended_prediction_data": "TODO"
+        "voter": {"type": "string", "default": "confidence_voter_default_ctc"}
       }
     }
   }
