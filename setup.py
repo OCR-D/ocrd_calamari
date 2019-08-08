@@ -24,7 +24,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'ocrd-calamari-ocr=ocrd_calamari.cli:ocrd_calamari_ocr',
+            'ocrd-calamari-recognize=ocrd_calamari.cli:ocrd_calamari_recognize',
         ]
     },
 )

@@ -15,16 +15,14 @@ from ocrd_utils import getLogger, concat_padded, polygon_from_points, MIMETYPE_P
 
 from ocrd_calamari.config import OCRD_TOOL, TF_CPP_MIN_LOG_LEVEL
 
-log = getLogger('processor.CalamariOcr')
-
-# TODO: Should this be "recognize", not "ocr" akin ocrd_tesserocr?
+log = getLogger('processor.CalamariRecognize')
 
 
-class CalamariOcr(Processor):
+class CalamariRecognize(Processor):
 
     def __init__(self, *args, **kwargs):
-        kwargs['ocrd_tool'] = OCRD_TOOL['tools']['ocrd-calamari-ocr']
-        super(CalamariOcr, self).__init__(*args, **kwargs)
+        kwargs['ocrd_tool'] = OCRD_TOOL['tools']['ocrd-calamari-recognize']
+        super(CalamariRecognize, self).__init__(*args, **kwargs)
 
     def _init_calamari(self):
         os.environ['TF_CPP_MIN_LOG_LEVEL'] = TF_CPP_MIN_LOG_LEVEL
