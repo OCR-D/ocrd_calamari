@@ -75,6 +75,8 @@ class CalamariRecognize(Processor):
 
                     line.add_TextEquiv(TextEquivType(Unicode=line_text, conf=line_conf))
 
+            _page_update_higher_textequiv_levels('line', pcgts)
+
             file_id = self._make_file_id(input_file, n)
             self.workspace.add_file(
                 ID=file_id,
@@ -83,3 +85,38 @@ class CalamariRecognize(Processor):
                 mimetype=MIMETYPE_PAGE,
                 local_filename=os.path.join(self.output_file_grp, file_id + '.xml'),
                 content=to_xml(pcgts))
+
+
+# TODO: This is a copy of ocrd_tesserocr's function, and should probably be moved to a ocrd lib
+def _page_update_higher_textequiv_levels(level, pcgts):
+    """Update the TextEquivs of all PAGE-XML hierarchy levels above `level` for consistency.
+
+    Starting with the hierarchy level chosen for processing,
+    join all first TextEquiv (by the rules governing the respective level)
+    into TextEquiv of the next higher level, replacing them.
+    """
+    regions = pcgts.get_Page().get_TextRegion()
+    if level != 'region':
+        for region in regions:
+            lines = region.get_TextLine()
+            if level != 'line':
+                for line in lines:
+                    words = line.get_Word()
+                    if level != 'word':
+                        for word in words:
+                            glyphs = word.get_Glyph()
+                            word_unicode = u''.join(glyph.get_TextEquiv()[0].Unicode
+                                                    if glyph.get_TextEquiv()
+                                                    else u'' for glyph in glyphs)
+                            word.set_TextEquiv(
+                                [TextEquivType(Unicode=word_unicode)])  # remove old
+                    line_unicode = u' '.join(word.get_TextEquiv()[0].Unicode
+                                             if word.get_TextEquiv()
+                                             else u'' for word in words)
+                    line.set_TextEquiv(
+                        [TextEquivType(Unicode=line_unicode)])  # remove old
+            region_unicode = u'\n'.join(line.get_TextEquiv()[0].Unicode
+                                        if line.get_TextEquiv()
+                                        else u'' for line in lines)
+            region.set_TextEquiv(
+                [TextEquivType(Unicode=region_unicode)])  # remove old
