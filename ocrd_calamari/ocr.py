@@ -1,15 +1,18 @@
 from __future__ import absolute_import
 
+import os
 from glob import glob
 
 import numpy as np
 from calamari_ocr.ocr import MultiPredictor
 from calamari_ocr.ocr.voting import voter_from_proto
 from calamari_ocr.proto import VoterParams
-from ocrd import Processor
+from ocrd import Processor, MIMETYPE_PAGE
 from ocrd.logging import getLogger
 from ocrd.model import ocrd_page
-from ocrd.utils import polygon_from_points
+from ocrd.model.ocrd_page import to_xml
+from ocrd.model.ocrd_page_generateds import TextEquivType
+from ocrd.utils import polygon_from_points, concat_padded
 
 from ocrd_calamari.config import OCRD_TOOL
 
@@ -34,6 +37,12 @@ class CalamariOcr(Processor):
 
     def resolve_image_as_np(self, image_url, coords):
         return np.array(self.workspace.resolve_image_as_pil(image_url, coords), dtype=np.uint8)
+
+    def _make_file_id(self, input_file, n):
+        file_id = input_file.ID.replace(self.input_file_grp, self.output_file_grp)
+        if file_id == input_file.ID:
+            file_id = concat_padded(self.output_file_grp, n)
+        return file_id
 
     def process(self):
         """
@@ -62,7 +71,16 @@ class CalamariOcr(Processor):
                     prediction = self.voter.vote_prediction_result(raw_results)
                     prediction.id = "voted"
 
-                    print('***', prediction.sentence)
-                    print(prediction.avg_char_probability)
-                    for raw_result in raw_results:
-                        print(raw_result.sentence)
+                    line_text = prediction.sentence
+                    line_conf = prediction.avg_char_probability
+
+                    line.add_TextEquiv(TextEquivType(Unicode=line_text, conf=line_conf))
+
+            file_id = self._make_file_id(input_file, n)
+            self.workspace.add_file(
+                ID=file_id,
+                file_grp=self.output_file_grp,
+                pageId=input_file.pageId,
+                mimetype=MIMETYPE_PAGE,
+                local_filename=os.path.join(self.output_file_grp, file_id + '.xml'),
+                content=to_xml(pcgts))
