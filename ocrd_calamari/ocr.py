@@ -9,7 +9,6 @@ from calamari_ocr.ocr.voting import voter_from_proto
 from calamari_ocr.proto import VoterParams
 from ocrd import Processor
 from ocrd_modelfactory import page_from_file
-from ocrd_models import ocrd_page
 from ocrd_models.ocrd_page import to_xml
 from ocrd_models.ocrd_page_generateds import TextEquivType
 from ocrd_utils import getLogger, concat_padded, polygon_from_points, MIMETYPE_PAGE
