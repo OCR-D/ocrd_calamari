@@ -18,7 +18,7 @@
         "OCR-D-OCR-CALAMARI"
       ],
       "parameters": {
-        "XXX checkpoint": {"type": "string", "format": "file", "cacheable": true},
+        "checkpoint": {"type": "string", "format": "file", "cacheable": true},
         "voter": {"type": "string", "default": "confidence_voter_default_ctc"}
       }
     }

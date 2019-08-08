@@ -27,7 +27,7 @@ class CalamariRecognize(Processor):
     def _init_calamari(self):
         os.environ['TF_CPP_MIN_LOG_LEVEL'] = TF_CPP_MIN_LOG_LEVEL
 
-        checkpoints = glob('/home/mike/devel/experiments/train-calamari-gt4histocr/models/*.ckpt.json')  # XXX
+        checkpoints = glob(self.parameter['checkpoint'])
         self.predictor = MultiPredictor(checkpoints=checkpoints)
 
         voter_params = VoterParams()
