@@ -21,7 +21,7 @@
         "XXX checkpoint": {"type": "string", "format": "file", "cacheable": true},
         "processes": {"type": "number", "default": 1},
         "batch_size": {"type": "number", "default": 1},
-        "XXX voter": {"type": "string", "default": "confidence_voter_default_ctc"},
+        "voter": {"type": "string", "default": "confidence_voter_default_ctc"},
         "XXXX extended_prediction_data_format": {"type": "string", "default": "json"},
         "XXX output_dir": "TODO",
         "XXX extended_prediction_data": "TODO"

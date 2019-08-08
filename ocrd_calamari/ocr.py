@@ -33,7 +33,7 @@ class CalamariOcr(Processor):
         self.predictor = MultiPredictor(checkpoints=checkpoints)
 
         voter_params = VoterParams()
-        voter_params.type = VoterParams.Type.Value('confidence_voter_default_ctc'.upper())
+        voter_params.type = VoterParams.Type.Value(self.parameter['voter'].upper())
         self.voter = voter_from_proto(voter_params)
 
     def resolve_image_as_np(self, image_url, coords):
