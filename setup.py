@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Installs one executable:
-
-    - ocrd_calamari_ocr
-"""
 import codecs
 
 from setuptools import setup, find_packages
