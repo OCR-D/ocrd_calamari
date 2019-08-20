@@ -1,7 +1,8 @@
-GIT_CLONE = git clone --depth 1
+# '$(PIP_INSTALL)'
+PIP_INSTALL = pip install
 
-# Docker tag
-DOCKER_TAG = ocrd/calamari
+# '$(GIT_CLONE)'
+GIT_CLONE = git clone --depth 1
 
 # BEGIN-EVAL makefile-parser --make-help Makefile
 
@@ -9,31 +10,30 @@ help:
 	@echo ""
 	@echo "  Targets"
 	@echo ""
-	@echo "    calamari         git clone calamari"
-	@echo "    calamari_models  git clone calamari_models"
-	@echo "    calamari/build   Install calamari"
-	@echo "    docker           Build docker image"
+	@echo "    install          Install ocrd_calamari"
+	@echo "    calamari         Clone calamari repo"
+	@echo "    calamari_models  Clone calamari_models repo"
+	@echo "    calamari/build   pip install calamari"
 	@echo ""
 	@echo "  Variables"
 	@echo ""
-	@echo "    DOCKER_TAG  Docker tag"
+	@echo "    PIP_INSTALL  '$(PIP_INSTALL)'"
+	@echo "    GIT_CLONE    '$(GIT_CLONE)'"
 
 # END-EVAL
 
-# git clone calamari
+# Install ocrd_calamari
+install:
+	$(PIP_INSTALL) .
+
+# Clone calamari repo
 calamari:
 	$(GIT_CLONE) https://github.com/chwick/calamari
 
-# git clone calamari_models
+# Clone calamari_models repo
 calamari_models:
 	$(GIT_CLONE) https://github.com/chwick/calamari_models
 
-# Install calamari
+# pip install calamari
 calamari/build: calamari calamari_models
-	cd calamari &&\
-		pip install -r requirements.txt ;\
-		python setup.py install
-
-# Build docker image
-docker:
-	docker build -t '$(DOCKER_TAG)' .
+	cd calamari && $(PIP_INSTALL) .
