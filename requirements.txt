@@ -1,5 +1,4 @@
 numpy
-calamari-ocr
-tensorflow-gpu
+calamari-ocr >= 0.3.5
 click
-ocrd >= 1.0.0b11
+ocrd >= 1.0.0b15
