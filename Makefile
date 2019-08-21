@@ -78,7 +78,7 @@ test: test/assets calamari_models
 	$(PYTHON) -m pytest --continue-on-collection-errors test $(PYTEST_ARGS)
 
 # Run unit tests and determine test coverage
-coverage:
+coverage: test/assets calamari_models
 	coverage erase
 	make test PYTHON="coverage run"
 	coverage report

@@ -8,7 +8,7 @@ jobs:
     docker:
       - image: ubuntu:18.04
     steps:
-      - run: apt-get update ; apt-get install -y make git curl
+      - run: apt-get update ; apt-get install -y make git curl python3-pip
       - checkout
       - run: make install
       - run: pip install -r requirements-test.txt
