@@ -10,8 +10,8 @@ jobs:
     steps:
       - run: apt-get update ; apt-get install -y make git curl python3-pip
       - checkout
-      - run: make install
-      - run: pip install -r requirements-test.txt
+      - run: make install PIP_INSTALL="pip3 install"
+      - run: pip3 install -r requirements-test.txt
       - run: make coverage
       - codecov/upload
 
