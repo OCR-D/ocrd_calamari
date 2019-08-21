@@ -1,0 +1,21 @@
+version: 2.1
+orbs:
+  codecov: codecov/codecov@1.0.5
+
+jobs:
+
+  build-python36:
+    docker:
+      - image: ubuntu:18.04
+    steps:
+      - run: apt-get update ; apt-get install -y make git curl
+      - checkout
+      - run: make install
+      - run: pip install -r requirements-test.txt
+      - run: make coverage
+      - codecov/upload
+
+workflows:
+  build:
+    jobs:
+      - build-python36
