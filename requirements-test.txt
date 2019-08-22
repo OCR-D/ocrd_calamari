@@ -1,2 +1,3 @@
 pytest
 ocrd_tesserocr >= 0.4.0
+coverage
