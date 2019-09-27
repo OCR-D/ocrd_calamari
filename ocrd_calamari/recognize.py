@@ -76,7 +76,7 @@ class CalamariRecognize(Processor):
                     line_text = prediction.sentence
                     line_conf = prediction.avg_char_probability
 
-                    line.add_TextEquiv(TextEquivType(Unicode=line_text, conf=line_conf))
+                    line.set_TextEquiv([TextEquivType(Unicode=line_text, conf=line_conf)])
 
             _page_update_higher_textequiv_levels('line', pcgts)
 
