@@ -11,7 +11,7 @@ from ocrd import Processor
 from ocrd_modelfactory import page_from_file
 from ocrd_models.ocrd_page import to_xml
 from ocrd_models.ocrd_page_generateds import TextEquivType
-from ocrd_utils import getLogger, concat_padded, polygon_from_points, MIMETYPE_PAGE
+from ocrd_utils import getLogger, concat_padded, MIMETYPE_PAGE
 
 from ocrd_calamari.config import OCRD_TOOL, TF_CPP_MIN_LOG_LEVEL
 
@@ -34,9 +34,6 @@ class CalamariRecognize(Processor):
         voter_params.type = VoterParams.Type.Value(self.parameter['voter'].upper())
         self.voter = voter_from_proto(voter_params)
 
-    def resolve_image_as_np(self, image_url, coords):
-        return np.array(self.workspace.resolve_image_as_pil(image_url, coords), dtype=np.uint8)
-
     def _make_file_id(self, input_file, n):
         file_id = input_file.ID.replace(self.input_file_grp, self.output_file_grp)
         if file_id == input_file.ID:
@@ -51,19 +48,25 @@ class CalamariRecognize(Processor):
         self._init_calamari()
 
         for (n, input_file) in enumerate(self.input_files):
-            log.info("INPUT FILE %i / %s", n, input_file)
+            page_id = input_file.pageId or input_file.ID
+            log.info("INPUT FILE %i / %s", n, page_id)
             pcgts = page_from_file(self.workspace.download_file(input_file))
-            image_url = pcgts.get_Page().imageFilename
-            log.info("pcgts %s", pcgts)
+
+            page = pcgts.get_Page()
+            page_image, page_xywh, page_image_info = self.workspace.image_from_page(page, page_id)
+
             for region in pcgts.get_Page().get_TextRegion():
+                region_image, region_xywh = self.workspace.image_from_segment(region, page_image, page_xywh)
+
                 textlines = region.get_TextLine()
                 log.info("About to recognize %i lines of region '%s'", len(textlines), region.id)
                 for (line_no, line) in enumerate(textlines):
                     log.debug("Recognizing line '%s' in region '%s'", line_no, region.id)
 
-                    image = self.resolve_image_as_np(image_url, polygon_from_points(line.get_Coords().points))
+                    line_image, line_xywh = self.workspace.image_from_segment(line, region_image, region_xywh)
+                    line_image_np = np.array(line_image, dtype=np.uint8)
 
-                    raw_results = list(self.predictor.predict_raw([image], progress_bar=False))[0]
+                    raw_results = list(self.predictor.predict_raw([line_image_np], progress_bar=False))[0]
                     for i, p in enumerate(raw_results):
                         p.prediction.id = "fold_{}".format(i)
 
