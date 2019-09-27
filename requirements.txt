@@ -1,5 +1,6 @@
 numpy
 calamari-ocr
+setuptools >= 41.0.0  # tensorboard depends on this, but why do we get an error at runtime?
 tensorflow-gpu
 click
 ocrd >= 1.0.0b11
