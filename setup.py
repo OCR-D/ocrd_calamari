@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import codecs
+from pathlib import Path
 
 from setuptools import setup, find_packages
 
@@ -7,13 +7,14 @@ setup(
     name='ocrd_calamari',
     version='0.0.1',
     description='Calamari bindings',
-    long_description=codecs.open('README.md', encoding='utf-8').read(),
+    long_description=Path('README.md').read_text(),
+    long_description_content_type='text/markdown',
     author='Konstantin Baierer, Mike Gerber',
     author_email='unixprog@gmail.com, mike.gerber@sbb.spk-berlin.de',
     url='https://github.com/kba/ocrd_calamari',
     license='Apache License 2.0',
     packages=find_packages(exclude=('tests', 'docs')),
-    install_requires=open('requirements.txt').read().split('\n'),
+    install_requires=Path('requirements.txt').read_text().split('\n'),
     package_data={
         '': ['*.json', '*.yml', '*.yaml'],
     },
