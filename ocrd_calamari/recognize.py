@@ -77,7 +77,13 @@ class CalamariRecognize(Processor):
                     line_text = prediction.sentence
                     line_conf = prediction.avg_char_probability
 
+                    if line.get_TextEquiv():
+                        log.warning("Line '%s' already contained text results", line.id)
                     line.set_TextEquiv([TextEquivType(Unicode=line_text, conf=line_conf)])
+                    
+                    if line.get_Word():
+                        log.warning("Line '%s' already contained word segmentation", line.id)
+                    line.set_Word([])
 
             _page_update_higher_textequiv_levels('line', pcgts)
 
