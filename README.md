@@ -15,25 +15,15 @@ image) as its input.
 
 ## Installation
 
-### From PyPI
-
-:construction: :construction: :construction: :construction: :construction: :construction: :construction:
-
 ```
 pip install ocrd_calamari
 ```
 
-### From Repo
+## Install models
 
-```sh
-pip install .
 ```
-
-To install the calamari with the GPU version of Tensorflow:
-
-```sh
-pip install 'calamari-ocr[tf_cpu]'
-pip install .
+wget https://github.com/Calamari-OCR/calamari_models/archive/master.zip
+unzip master.zip
 ```
 
 ## Example Usage
