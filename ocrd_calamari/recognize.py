@@ -22,6 +22,7 @@ class CalamariRecognize(Processor):
 
     def __init__(self, *args, **kwargs):
         kwargs['ocrd_tool'] = OCRD_TOOL['tools']['ocrd-calamari-recognize']
+        kwargs['version'] = OCRD_TOOL['version']
         super(CalamariRecognize, self).__init__(*args, **kwargs)
 
     def _init_calamari(self):
