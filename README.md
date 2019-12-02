@@ -21,9 +21,20 @@ pip install ocrd_calamari
 
 ## Install models
 
+Download standard models:
+
 ```
 wget https://github.com/Calamari-OCR/calamari_models/archive/master.zip
 unzip master.zip
+```
+
+Download models trained on GT4HistOCR data:
+
+```
+wget https://file.spk-berlin.de:8443/calamari-models/GT4HistOCR/model.tar.xz
+mkdir gt4hist-calamari
+cd gt4hist-calamari
+tar xf ../model.tar.xz
 ```
 
 ## Example Usage
