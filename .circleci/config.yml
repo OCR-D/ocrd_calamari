@@ -6,7 +6,7 @@ jobs:
 
   build-python36:
     docker:
-      - image: ubuntu:19.04
+      - image: ubuntu:18.04
     steps:
       - run: apt-get update ; apt-get install -y make git curl python3 python3-pip wget
       - checkout
