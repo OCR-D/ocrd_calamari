@@ -15,6 +15,8 @@ image) as its input.
 
 ## Installation
 
+### From PyPI
+
 ```
 pip install ocrd_calamari
 ```
