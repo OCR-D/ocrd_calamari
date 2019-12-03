@@ -102,7 +102,9 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+
 /calamari
 /calamari_models
 /repo
-/test
+/test/assets
