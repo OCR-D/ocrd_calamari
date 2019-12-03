@@ -1,5 +1,5 @@
 # '$(PIP_INSTALL)'
-PIP_INSTALL = pip install
+PIP_INSTALL = pip3 install
 
 # '$(GIT_CLONE)'
 GIT_CLONE = git clone
