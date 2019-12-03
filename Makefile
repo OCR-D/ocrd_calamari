@@ -44,7 +44,7 @@ calamari:
 calamari_models:
 	$(GIT_CLONE) -n https://github.com/chwick/calamari_models
 	# Checkout latest version that works with calamari-ocr==0.3.5:
-	git checkout f76b1d3ec
+	cd calamari_models && git checkout f76b1d3ec
 
 
 # pip install calamari
