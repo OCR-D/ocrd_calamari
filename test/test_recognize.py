@@ -45,7 +45,7 @@ class TestCalamariRecognize(TestCase):
 
         page1 = os.path.join(workspace.directory, 'OCR-D-OCR-CALAMARI/OCR-D-OCR-CALAMARI_0001.xml')
         self.assertTrue(os.path.exists(page1))
-        with open(page1, 'r') as f:
+        with open(page1, 'r', encoding='utf-8') as f:
             self.assertIn('verſchuldeten', f.read())
 
 if __name__ == '__main__':
