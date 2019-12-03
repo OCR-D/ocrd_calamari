@@ -21,6 +21,12 @@ image) as its input.
 pip install ocrd_calamari
 ```
 
+### From Repo
+
+```sh
+pip install .
+```
+
 ## Install models
 
 Download standard models:
