@@ -5,7 +5,7 @@ PYTHON = python
 PIP_INSTALL = pip install
 
 # '$(GIT_CLONE)'
-GIT_CLONE = git clone --depth 1
+GIT_CLONE = git clone
 
 # BEGIN-EVAL makefile-parser --make-help Makefile
 
@@ -42,7 +42,10 @@ calamari:
 
 # Clone calamari_models repo
 calamari_models:
-	$(GIT_CLONE) https://github.com/chwick/calamari_models
+	$(GIT_CLONE) -n https://github.com/chwick/calamari_models
+	# Checkout latest version that works with calamari-ocr==0.3.5:
+	git checkout f76b1d3ec
+
 
 # pip install calamari
 calamari/build: calamari calamari_models
