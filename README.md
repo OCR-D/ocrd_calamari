@@ -1,6 +1,10 @@
 # ocrd_calamari
 
-Recognize text using [Calamari OCR](https://github.com/Calamari-OCR/calamari).
+> Recognize text using [Calamari OCR](https://github.com/Calamari-OCR/calamari).
+
+[![image](https://circleci.com/gh/OCR-D/ocrd_calamari.svg?style=svg)](https://circleci.com/gh/OCR-D/ocrd_calamari)
+[![image](https://img.shields.io/pypi/v/ocrd_calamari.svg)](https://pypi.org/project/ocrd_calamari/)
+[![image](https://codecov.io/gh/OCR-D/ocrd_calamari/branch/master/graph/badge.svg)](https://codecov.io/gh/OCR-D/ocrd_calamari)
 
 ## Introduction
 
