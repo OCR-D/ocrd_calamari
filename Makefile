@@ -14,7 +14,7 @@ help:
 	@echo "    calamari         Clone calamari repo"
 	@echo "    calamari_models  Clone calamari_models repo"
 	@echo "    calamari/build   pip install calamari"
-	@echo "    deps-test        Install testing python deps via pip
+	@echo "    deps-test        Install testing python deps via pip"
 	@echo "    repo/assets      Clone OCR-D/assets to ./repo/assets"
 	@echo "    test/assets      Setup test assets"
 	@echo "    assets-clean     Remove symlinks in test/assets"
