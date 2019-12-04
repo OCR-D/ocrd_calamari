@@ -65,7 +65,5 @@ For information regarding development and testing, please see
 
 TODO
 ----
-
-* Support Calamari's "extended prediction data" output
 * Currently, the processor only supports a prediction using confidence voting of multiple models. While this is
   superior, it makes sense to support single model prediction, too.
