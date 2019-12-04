@@ -1,7 +1,4 @@
-# '$(PIP_INSTALL)'
 PIP_INSTALL = pip3 install
-
-# '$(GIT_CLONE)'
 GIT_CLONE = git clone
 PYTHON = python3
 
