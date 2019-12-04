@@ -13,19 +13,50 @@ This offers a OCR-D compliant workspace processor for some of the functionality 
 This processor only operates on the text line level and so needs a line segmentation (and by extension a binarized 
 image) as its input.
 
-## Example Usage
+## Installation
 
-```sh
-ocrd-calamari-recognize -p test-parameters.json -m mets.xml -I OCR-D-SEG-LINE -O OCR-D-OCR-CALAMARI
+### From PyPI
+
+```
+pip install ocrd_calamari
 ```
 
-With `test-parameters.json`:
+### From Repo
 
-```json
+```sh
+pip install .
+```
+
+## Install models
+
+Download standard models:
+
+```
+wget https://github.com/Calamari-OCR/calamari_models/archive/master.zip
+unzip master.zip
+```
+
+Download models trained on GT4HistOCR data:
+
+```
+wget https://file.spk-berlin.de:8443/calamari-models/GT4HistOCR/model.tar.xz
+mkdir gt4hist-calamari
+cd gt4hist-calamari
+tar xf ../model.tar.xz
+```
+
+## Example Usage
+
+~~~
+ocrd-calamari-recognize -p test-parameters.json -m mets.xml -I OCR-D-SEG-LINE -O OCR-D-OCR-CALAMARI
+~~~
+
+With `test-parameters.json`:
+~~~
 {
     "checkpoint": "/path/to/some/trained/models/*.ckpt.json"
 }
-```
+~~~
 
 TODO
 ----

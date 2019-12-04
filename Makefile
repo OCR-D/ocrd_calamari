@@ -1,8 +1,5 @@
-# '$(PYTHON)'
-PYTHON = python
-
 # '$(PIP_INSTALL)'
-PIP_INSTALL = pip install
+PIP_INSTALL = pip3 install
 
 # '$(GIT_CLONE)'
 GIT_CLONE = git clone
@@ -17,7 +14,7 @@ help:
 	@echo "    calamari         Clone calamari repo"
 	@echo "    calamari_models  Clone calamari_models repo"
 	@echo "    calamari/build   pip install calamari"
-	@echo "    deps-test        Install testing python deps via pip"
+	@echo "    deps-test        Install testing python deps via pip
 	@echo "    repo/assets      Clone OCR-D/assets to ./repo/assets"
 	@echo "    test/assets      Setup test assets"
 	@echo "    assets-clean     Remove symlinks in test/assets"
@@ -26,7 +23,6 @@ help:
 	@echo ""
 	@echo "  Variables"
 	@echo ""
-	@echo "    PYTHON       '$(PYTHON)'"
 	@echo "    PIP_INSTALL  '$(PIP_INSTALL)'"
 	@echo "    GIT_CLONE    '$(GIT_CLONE)'"
 
@@ -50,6 +46,7 @@ calamari_models:
 # pip install calamari
 calamari/build: calamari calamari_models
 	cd calamari && $(PIP_INSTALL) .
+
 
 #
 # Assets and Tests
