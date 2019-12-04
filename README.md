@@ -61,9 +61,3 @@ With `test-parameters.json`:
 ## Development & Testing
 For information regarding development and testing, please see
 [README-DEV.md](README-DEV.md).
-
-
-TODO
-----
-* Currently, the processor only supports a prediction using confidence voting of multiple models. While this is
-  superior, it makes sense to support single model prediction, too.
