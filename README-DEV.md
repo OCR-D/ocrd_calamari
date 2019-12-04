@@ -1,3 +1,12 @@
+Testing
+-------
+In a Python 3 virtualenv:
+
+~~~
+pip install -e .
+make test
+~~~
+
 Release
 -------
 * Update ocrd-tool.json version
