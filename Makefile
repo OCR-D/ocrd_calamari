@@ -3,6 +3,7 @@ PIP_INSTALL = pip3 install
 
 # '$(GIT_CLONE)'
 GIT_CLONE = git clone
+PYTHON = python3
 
 # BEGIN-EVAL makefile-parser --make-help Makefile
 
@@ -23,6 +24,7 @@ help:
 	@echo ""
 	@echo "  Variables"
 	@echo ""
+	@echo "    PYTHON       '$(PYTHON)'"
 	@echo "    PIP_INSTALL  '$(PIP_INSTALL)'"
 	@echo "    GIT_CLONE    '$(GIT_CLONE)'"
 
@@ -75,7 +77,7 @@ assets-clean:
 # Run unit tests
 test: test/assets calamari_models
 	# declare -p HTTP_PROXY
-	python3 -m pytest --continue-on-collection-errors test $(PYTEST_ARGS)
+	$(PYTHON) -m pytest --continue-on-collection-errors test $(PYTEST_ARGS)
 
 # Run unit tests and determine test coverage
 coverage: test/assets calamari_models
