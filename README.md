@@ -39,10 +39,8 @@ unzip master.zip
 Download models trained on GT4HistOCR data:
 
 ```
-wget https://file.spk-berlin.de:8443/calamari-models/GT4HistOCR/model.tar.xz
-mkdir gt4hist-calamari
-cd gt4hist-calamari
-tar xf ../model.tar.xz
+make gt4histocr-calamari
+ls gt4histocr-calamari
 ```
 
 ## Example Usage

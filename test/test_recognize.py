@@ -1,5 +1,6 @@
 import os
 import shutil
+import subprocess
 import urllib.request
 
 from test.base import TestCase, main, assets, skip
@@ -31,6 +32,18 @@ class TestCalamariRecognize(TestCase):
                     "https://github.com/OCR-D/assets/raw/master/data/kant_aufklaerung_1784/data/OCR-D-IMG/" + f,
                     os.path.join(WORKSPACE_DIR, 'OCR-D-IMG', f))
 
+        # The binarization options I have are:
+        #
+        # a. ocrd_kraken which tries to install cltsm, whose installation is borken on my machine (protobuf)
+        # b. ocrd_olena which 1. I cannot fully install via pip and 2. whose dependency olena doesn't compile on my
+        #    machine
+        # c. just fumble with the original files
+        #
+        # So I'm going for option c.
+        for f in ['INPUT_0017.tif', 'INPUT_0020.tif']:
+            ff = os.path.join(WORKSPACE_DIR, 'OCR-D-IMG', f)
+            subprocess.call(['convert', ff, '-colorspace', 'Gray', ff])
+
         # XXX Should remove GT text to really test this
 
         CalamariRecognize(
@@ -38,7 +51,7 @@ class TestCalamariRecognize(TestCase):
             input_file_grp="OCR-D-GT-SEG-LINE",
             output_file_grp="OCR-D-OCR-CALAMARI",
             parameter={
-                'checkpoint': os.path.join(os.getcwd(), 'calamari_models/fraktur_19th_century/*.ckpt.json')
+                'checkpoint': os.path.join(os.getcwd(), 'gt4histocr-calamari/*.ckpt.json')
             }
         ).process()
         workspace.save_mets()

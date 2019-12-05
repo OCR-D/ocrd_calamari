@@ -106,5 +106,6 @@ venv.bak/
 
 /calamari
 /calamari_models
+/gt4histocr-calamari
 /repo
 /test/assets

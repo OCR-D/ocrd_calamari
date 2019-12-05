@@ -12,6 +12,7 @@ help:
 	@echo "    install          Install ocrd_calamari"
 	@echo "    calamari         Clone calamari repo"
 	@echo "    calamari_models  Clone calamari_models repo"
+	@echo "    gt4histocr-calamari Get GT4HistOCR Calamari model (from SBB)"
 	@echo "    calamari/build   pip install calamari"
 	@echo "    deps-test        Install testing python deps via pip"
 	@echo "    repo/assets      Clone OCR-D/assets to ./repo/assets"
@@ -41,6 +42,14 @@ calamari_models:
 	$(GIT_CLONE) -n https://github.com/chwick/calamari_models
 	# Checkout latest version that works with calamari-ocr==0.3.5:
 	cd calamari_models && git checkout f76b1d3ec
+
+gt4histocr-calamari:
+	mkdir gt4histocr-calamari
+	cd gt4histocr-calamari && \
+	wget https://file.spk-berlin.de:8443/calamari-models/GT4HistOCR/model.tar.xz && \
+	tar xfv model.tar.xz && \
+	rm model.tar.xz
+
 
 
 # pip install calamari
@@ -73,7 +82,7 @@ assets-clean:
 	rm -rf test/assets
 
 # Run unit tests
-test: test/assets calamari_models
+test: test/assets gt4histocr-calamari
 	# declare -p HTTP_PROXY
 	$(PYTHON) -m pytest --continue-on-collection-errors test $(PYTEST_ARGS)
 
