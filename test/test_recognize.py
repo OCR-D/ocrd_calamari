@@ -10,6 +10,7 @@ from ocrd_calamari import CalamariRecognize
 from .base import assets
 
 METS_KANT = assets.url_of('kant_aufklaerung_1784-page-block-line-word_glyph/data/mets.xml')
+CHECKPOINT = os.path.join(os.getcwd(), 'gt4histocr-calamari/*.ckpt.json')
 WORKSPACE_DIR = '/tmp/test-ocrd-calamari'
 
 
@@ -52,9 +53,7 @@ def test_recognize(workspace):
         workspace,
         input_file_grp="OCR-D-GT-SEG-LINE",
         output_file_grp="OCR-D-OCR-CALAMARI",
-        parameter={
-            'checkpoint': os.path.join(os.getcwd(), 'gt4histocr-calamari/*.ckpt.json')
-        }
+        parameter={'checkpoint': CHECKPOINT}
     ).process()
     workspace.save_mets()
 
