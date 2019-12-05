@@ -44,7 +44,7 @@ def test_recognize(workspace):
     # So I'm going for option c.
     for f in ['INPUT_0017.tif', 'INPUT_0020.tif']:
         ff = os.path.join(WORKSPACE_DIR, 'OCR-D-IMG', f)
-        subprocess.call(['convert', ff, '-colorspace', 'Gray', ff])
+        subprocess.call(['convert', ff, '-threshold', '50%', ff])
 
     # XXX Should remove GT text to really test this
 
