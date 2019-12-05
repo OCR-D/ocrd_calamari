@@ -7,7 +7,7 @@ import pytest
 from ocrd.resolver import Resolver
 
 from ocrd_calamari import CalamariRecognize
-from test.base import main, assets
+from .base import assets
 
 METS_KANT = assets.url_of('kant_aufklaerung_1784-page-block-line-word_glyph/data/mets.xml')
 WORKSPACE_DIR = '/tmp/test-ocrd-calamari'
@@ -62,7 +62,3 @@ def test_recognize(workspace):
     assert os.path.exists(page1)
     with open(page1, 'r', encoding='utf-8') as f:
         assert 'verſchuldeten' in f.read()
-
-
-if __name__ == '__main__':
-    main()
