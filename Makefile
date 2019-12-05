@@ -1,6 +1,7 @@
 PIP_INSTALL = pip3 install
 GIT_CLONE = git clone
 PYTHON = python3
+PYTEST_ARGS = -W 'ignore::DeprecationWarning' -W 'ignore::FutureWarning'
 
 # BEGIN-EVAL makefile-parser --make-help Makefile
 
