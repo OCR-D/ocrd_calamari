@@ -11,7 +11,6 @@ help:
 	@echo ""
 	@echo "    install          Install ocrd_calamari"
 	@echo "    calamari         Clone calamari repo"
-	@echo "    calamari_models  Clone calamari_models repo"
 	@echo "    gt4histocr-calamari Get GT4HistOCR Calamari model (from SBB)"
 	@echo "    calamari/build   pip install calamari"
 	@echo "    deps-test        Install testing python deps via pip"
@@ -37,12 +36,6 @@ install:
 calamari:
 	$(GIT_CLONE) https://github.com/chwick/calamari
 
-# Clone calamari_models repo
-calamari_models:
-	$(GIT_CLONE) -n https://github.com/chwick/calamari_models
-	# Checkout latest version that works with calamari-ocr==0.3.5:
-	cd calamari_models && git checkout f76b1d3ec
-
 gt4histocr-calamari:
 	mkdir gt4histocr-calamari
 	cd gt4histocr-calamari && \
@@ -53,7 +46,7 @@ gt4histocr-calamari:
 
 
 # pip install calamari
-calamari/build: calamari calamari_models
+calamari/build: calamari
 	cd calamari && $(PIP_INSTALL) .
 
 
@@ -87,7 +80,7 @@ test: test/assets gt4histocr-calamari
 	$(PYTHON) -m pytest --continue-on-collection-errors test $(PYTEST_ARGS)
 
 # Run unit tests and determine test coverage
-coverage: test/assets calamari_models
+coverage: test/assets gt4histocr-calamari
 	coverage erase
 	make test PYTHON="coverage run"
 	coverage report

@@ -29,13 +29,6 @@ pip install .
 
 ## Install models
 
-Download standard models:
-
-```
-wget https://github.com/Calamari-OCR/calamari_models/archive/master.zip
-unzip master.zip
-```
-
 Download models trained on GT4HistOCR data:
 
 ```
