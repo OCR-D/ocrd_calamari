@@ -15,13 +15,14 @@ from ocrd_utils import getLogger, concat_padded, MIMETYPE_PAGE
 
 from ocrd_calamari.config import OCRD_TOOL, TF_CPP_MIN_LOG_LEVEL
 
+TOOL = 'ocrd-calamari-recognize'
 log = getLogger('processor.CalamariRecognize')
 
 
 class CalamariRecognize(Processor):
 
     def __init__(self, *args, **kwargs):
-        kwargs['ocrd_tool'] = OCRD_TOOL['tools']['ocrd-calamari-recognize']
+        kwargs['ocrd_tool'] = OCRD_TOOL['tools'][TOOL]
         kwargs['version'] = OCRD_TOOL['version']
         super(CalamariRecognize, self).__init__(*args, **kwargs)
 
