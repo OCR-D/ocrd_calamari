@@ -9,8 +9,12 @@ from calamari_ocr.ocr.voting import voter_from_proto
 from calamari_ocr.proto import VoterParams
 from ocrd import Processor
 from ocrd_modelfactory import page_from_file
-from ocrd_models.ocrd_page import to_xml
-from ocrd_models.ocrd_page_generateds import TextEquivType
+from ocrd_models.ocrd_page import (
+        LabelType, LabelsType,
+        MetadataItemType,
+        TextEquivType,
+        to_xml
+)
 from ocrd_utils import getLogger, concat_padded, MIMETYPE_PAGE
 
 from ocrd_calamari.config import OCRD_TOOL, TF_CPP_MIN_LOG_LEVEL
@@ -87,6 +91,20 @@ class CalamariRecognize(Processor):
                     line.set_Word([])
 
             _page_update_higher_textequiv_levels('line', pcgts)
+
+
+            # Add metadata about this operation and its runtime parameters:
+            metadata = pcgts.get_Metadata()  # ensured by from_file()
+            metadata.add_MetadataItem(
+                MetadataItemType(type_="processingStep",
+                                 name=self.ocrd_tool['steps'][0],
+                                 value=TOOL,
+                                 Labels=[LabelsType(
+                                     externalModel="ocrd-tool",
+                                     externalId="parameters",
+                                     Label=[LabelType(type_=name, value=self.parameter[name])
+                                            for name in self.parameter.keys()])]))
+
 
             file_id = self._make_file_id(input_file, n)
             self.workspace.add_file(
