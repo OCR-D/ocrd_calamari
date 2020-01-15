@@ -12,7 +12,12 @@ jobs:
       - checkout
       - run: make install PIP_INSTALL="pip3 install"
       - run: pip3 install -r requirements-test.txt
-      - run: make coverage
+      - run:
+          command: |
+            if [[ $(python -c "import sys; print(sys.stdin.encoding)" |grep None) ]]; then
+              export PYTHONIOENCODING=utf-8
+            fi
+            make coverage
       - codecov/upload
 
 workflows:
