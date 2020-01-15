@@ -1,3 +1,4 @@
+export  # export variables to subshells
 PIP_INSTALL = pip3 install
 GIT_CLONE = git clone
 PYTHON = python3
