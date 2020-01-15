@@ -7,15 +7,14 @@ jobs:
   build-python36:
     docker:
       - image: ubuntu:18.04
+    environment:
+      - PYTHONIOENCODING: utf-8
     steps:
       - run: apt-get update ; apt-get install -y make git curl python3 python3-pip wget imagemagick
       - checkout
       - run: make install PIP_INSTALL="pip3 install"
       - run: pip3 install -r requirements-test.txt
-      - run:
-          command: |
-            export PYTHONIOENCODING=utf-8
-            make coverage
+      - run: make coverage
       - codecov/upload
 
 workflows:
