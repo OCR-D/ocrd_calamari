@@ -1,5 +1,5 @@
 numpy
-tensorflow-gpu == 1.14.0
+tensorflow-gpu == 1.15.2
 calamari-ocr == 0.3.5
 setuptools >= 41.0.0  # tensorboard depends on this, but why do we get an error at runtime?
 click
