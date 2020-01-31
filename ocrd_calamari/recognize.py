@@ -13,9 +13,10 @@ from ocrd_models.ocrd_page import (
         LabelType, LabelsType,
         MetadataItemType,
         TextEquivType,
+        WordType, CoordsType,
         to_xml
 )
-from ocrd_utils import getLogger, concat_padded, MIMETYPE_PAGE
+from ocrd_utils import getLogger, concat_padded, coordinates_for_segment, points_from_polygon, MIMETYPE_PAGE
 
 from ocrd_calamari.config import OCRD_TOOL, TF_CPP_MIN_LOG_LEVEL
 
@@ -69,7 +70,7 @@ class CalamariRecognize(Processor):
                 for (line_no, line) in enumerate(textlines):
                     log.debug("Recognizing line '%s' in region '%s'", line_no, region.id)
 
-                    line_image, line_xywh = self.workspace.image_from_segment(line, region_image, region_xywh)
+                    line_image, line_coords = self.workspace.image_from_segment(line, region_image, region_xywh)
                     line_image_np = np.array(line_image, dtype=np.uint8)
 
                     raw_results = list(self.predictor.predict_raw([line_image_np], progress_bar=False))[0]
@@ -82,13 +83,40 @@ class CalamariRecognize(Processor):
                     line_text = prediction.sentence
                     line_conf = prediction.avg_char_probability
 
+                    # Delete existing results
                     if line.get_TextEquiv():
                         log.warning("Line '%s' already contained text results", line.id)
-                    line.set_TextEquiv([TextEquivType(Unicode=line_text, conf=line_conf)])
-
+                    line.set_TextEquiv([])
                     if line.get_Word():
                         log.warning("Line '%s' already contained word segmentation", line.id)
                     line.set_Word([])
+
+                    # Save line results
+                    line.set_TextEquiv([TextEquivType(Unicode=line_text, conf=line_conf)])
+
+                    # Save word results
+                    # XXX For early development just put every char = glyph into its own word
+                    for word_no, p in enumerate(prediction.positions):
+                        start = p.global_start
+                        end = p.global_end
+
+
+                        # XXX Maybe use version in ocrd_tesserocr
+                        h = line_image.height
+                        polygon = [(start, 0), (end, 0), (end, h), (start, h)]
+                        points = points_from_polygon(coordinates_for_segment(polygon, None, line_coords))
+
+                        word = WordType(
+                                id='%s_word%04d' % (line.id, word_no),
+                                Coords=CoordsType(points))
+
+                        chars = sorted(p.chars, key=lambda k: k.probability, reverse=True)
+                        for index, char in enumerate(chars):
+                            if char.char:
+                                word.add_TextEquiv(TextEquivType(Unicode=char.char, index=index, conf=char.probability))
+                            # XXX Note that omission probabilities are not normalized?!
+
+                        line.add_Word(word)
 
             _page_update_higher_textequiv_levels('line', pcgts)
 
