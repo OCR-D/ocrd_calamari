@@ -4,7 +4,6 @@ import os
 from glob import glob
 
 import numpy as np
-import uniseg.wordbreak
 from calamari_ocr.ocr import MultiPredictor
 from calamari_ocr.ocr.voting import voter_from_proto
 from calamari_ocr.proto import VoterParams
@@ -101,26 +100,32 @@ class CalamariRecognize(Processor):
 
                     # Save word results
                     #
-                    # Calamari OCR does not provide word positions, so we infer word positions from a. Unicode text
-                    # segmentation and b. the glyph positions. This is necessary because the PAGE XML format enforces
-                    # a strict hierarchy of lines > words > glyphs.
+                    # Calamari OCR does not provide word positions, so we infer word positions from a. text segmentation
+                    # and b. the glyph positions. This is necessary because the PAGE XML format enforces a strict
+                    # hierarchy of lines > words > glyphs.
 
-                    def unwanted(c):
-                        """
-                        Define unwanted characters
-
-                        Words only containing these e.g. whitespace characters are not considered as words.
-                        """
-                        return c == " "
+                    def _words(s):
+                        """Split words based on spaces and include spaces as 'words'"""
+                        spaces = None
+                        word = ''
+                        for c in s:
+                            if c == ' ' and spaces is True:
+                                word += c
+                            elif c != ' ' and spaces is False:
+                                word += c
+                            else:
+                                if word:
+                                    yield word
+                                word = c
+                                spaces = (c == ' ')
+                        yield word
 
                     word_no = 0
                     i = 0
-                    for word_text in uniseg.wordbreak.words(prediction.sentence):
-                        # XXX Re-use word segmentation from dinglehopper, i.e. support private use characters
-                        word_length = len(word_text)
-                        do_not_include = all(unwanted(c) for c in word_text)
 
-                        if not do_not_include:
+                    for word_text in _words(prediction.sentence):
+                        word_length = len(word_text)
+                        if not all(c == ' ' for c in word_text):
                             word_positions = prediction.positions[i:i+word_length]
                             word_start = word_positions[0].global_start
                             word_end = word_positions[-1].global_end
@@ -152,10 +157,9 @@ class CalamariRecognize(Processor):
                                 word.add_Glyph(glyph)
 
                             line.add_Word(word)
-
+                            word_no += 1
 
                         i += word_length
-                        word_no += 1
 
 
             _page_update_higher_textequiv_levels('line', pcgts)
