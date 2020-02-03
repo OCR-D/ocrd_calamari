@@ -4,6 +4,7 @@ import os
 from glob import glob
 
 import numpy as np
+import uniseg.wordbreak
 from calamari_ocr.ocr import MultiPredictor
 from calamari_ocr.ocr.voting import voter_from_proto
 from calamari_ocr.proto import VoterParams
@@ -13,7 +14,7 @@ from ocrd_models.ocrd_page import (
         LabelType, LabelsType,
         MetadataItemType,
         TextEquivType,
-        WordType, CoordsType,
+        WordType, GlyphType, CoordsType,
         to_xml
 )
 from ocrd_utils import getLogger, concat_padded, coordinates_for_segment, points_from_polygon, MIMETYPE_PAGE
@@ -95,28 +96,53 @@ class CalamariRecognize(Processor):
                     line.set_TextEquiv([TextEquivType(Unicode=line_text, conf=line_conf)])
 
                     # Save word results
-                    # XXX For early development just put every char = glyph into its own word
-                    for word_no, p in enumerate(prediction.positions):
-                        start = p.global_start
-                        end = p.global_end
+                    def unwanted(c):
+                        return c == " "
+
+                    word_no = 0
+                    i = 0
+                    for word_text in uniseg.wordbreak.words(prediction.sentence):
+                        print(word_text)
+                        word_length = len(word_text)
+                        do_not_include = all(unwanted(c) for c in word_text)
+
+                        if not do_not_include:
+                            word_positions = prediction.positions[i:i+word_length]
+                            word_start = word_positions[0].global_start
+                            word_end = word_positions[-1].global_end
+
+                            # XXX Maybe use version in ocrd_tesserocr
+                            h = line_image.height
+                            polygon = [(word_start, 0), (word_end, 0), (word_end, h), (word_start, h)]
+                            points = points_from_polygon(coordinates_for_segment(polygon, None, line_coords))
+
+                            word = WordType(id='%s_word%04d' % (line.id, word_no), Coords=CoordsType(points))
+                            word.add_TextEquiv(TextEquivType(Unicode=word_text))
+
+                            for glyph_no, p in enumerate(word_positions):
+                                glyph_start = p.global_start
+                                glyph_end = p.global_end
+
+                                # XXX Maybe use version in ocrd_tesserocr
+                                h = line_image.height
+                                polygon = [(glyph_start, 0), (glyph_end, 0), (glyph_end, h), (glyph_start, h)]
+                                points = points_from_polygon(coordinates_for_segment(polygon, None, line_coords))
+
+                                glyph = GlyphType(id='%s_glyph%04d' % (word.id, glyph_no), Coords=CoordsType(points))
+
+                                chars = sorted(p.chars, key=lambda k: k.probability, reverse=True)
+                                for index, char in enumerate(chars):
+                                    if char.char:
+                                        glyph.add_TextEquiv(TextEquivType(Unicode=char.char, index=index, conf=char.probability))
+                                    # XXX Note that omission probabilities are not normalized?!
+                                word.add_Glyph(glyph)
+
+                            line.add_Word(word)
 
 
-                        # XXX Maybe use version in ocrd_tesserocr
-                        h = line_image.height
-                        polygon = [(start, 0), (end, 0), (end, h), (start, h)]
-                        points = points_from_polygon(coordinates_for_segment(polygon, None, line_coords))
+                        i += word_length
+                        word_no += 1
 
-                        word = WordType(
-                                id='%s_word%04d' % (line.id, word_no),
-                                Coords=CoordsType(points))
-
-                        chars = sorted(p.chars, key=lambda k: k.probability, reverse=True)
-                        for index, char in enumerate(chars):
-                            if char.char:
-                                word.add_TextEquiv(TextEquivType(Unicode=char.char, index=index, conf=char.probability))
-                            # XXX Note that omission probabilities are not normalized?!
-
-                        line.add_Word(word)
 
             _page_update_higher_textequiv_levels('line', pcgts)
 
