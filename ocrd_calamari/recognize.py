@@ -134,6 +134,7 @@ class CalamariRecognize(Processor):
                                     if char.char:
                                         glyph.add_TextEquiv(TextEquivType(Unicode=char.char, index=index, conf=char.probability))
                                     # XXX Note that omission probabilities are not normalized?!
+
                                 word.add_Glyph(glyph)
 
                             line.add_Word(word)
