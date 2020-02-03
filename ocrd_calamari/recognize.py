@@ -142,10 +142,12 @@ class CalamariRecognize(Processor):
                                 glyph = GlyphType(id='%s_glyph%04d' % (word.id, glyph_no), Coords=CoordsType(points))
 
                                 chars = sorted(p.chars, key=lambda k: k.probability, reverse=True)
-                                for index, char in enumerate(chars):
+                                char_index = 1  # Must start with 1, see https://ocr-d.github.io/page#multiple-textequivs
+                                for char in chars:
                                     if char.char:
-                                        glyph.add_TextEquiv(TextEquivType(Unicode=char.char, index=index, conf=char.probability))
-                                    # XXX Note that omission probabilities are not normalized?!
+                                        glyph.add_TextEquiv(TextEquivType(Unicode=char.char, index=char_index, conf=char.probability))
+                                        char_index += 1
+                                        # XXX Note that omission probabilities are not normalized?!
 
                                 word.add_Glyph(glyph)
 
