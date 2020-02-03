@@ -17,7 +17,11 @@ from ocrd_models.ocrd_page import (
         WordType, GlyphType, CoordsType,
         to_xml
 )
-from ocrd_utils import getLogger, concat_padded, coordinates_for_segment, points_from_polygon, MIMETYPE_PAGE
+from ocrd_utils import (
+        getLogger, concat_padded,
+        coordinates_for_segment, points_from_polygon, polygon_from_x0y0x1y1,
+        MIMETYPE_PAGE
+)
 
 from ocrd_calamari.config import OCRD_TOOL, TF_CPP_MIN_LOG_LEVEL
 
@@ -111,9 +115,7 @@ class CalamariRecognize(Processor):
                             word_start = word_positions[0].global_start
                             word_end = word_positions[-1].global_end
 
-                            # XXX Maybe use version in ocrd_tesserocr
-                            h = line_image.height
-                            polygon = [(word_start, 0), (word_end, 0), (word_end, h), (word_start, h)]
+                            polygon = polygon_from_x0y0x1y1([word_start, 0, word_end, line_image.height])
                             points = points_from_polygon(coordinates_for_segment(polygon, None, line_coords))
 
                             word = WordType(id='%s_word%04d' % (line.id, word_no), Coords=CoordsType(points))
@@ -123,9 +125,7 @@ class CalamariRecognize(Processor):
                                 glyph_start = p.global_start
                                 glyph_end = p.global_end
 
-                                # XXX Maybe use version in ocrd_tesserocr
-                                h = line_image.height
-                                polygon = [(glyph_start, 0), (glyph_end, 0), (glyph_end, h), (glyph_start, h)]
+                                polygon = polygon_from_x0y0x1y1([glyph_start, 0, glyph_end, line_image.height])
                                 points = points_from_polygon(coordinates_for_segment(polygon, None, line_coords))
 
                                 glyph = GlyphType(id='%s_glyph%04d' % (word.id, glyph_no), Coords=CoordsType(points))
