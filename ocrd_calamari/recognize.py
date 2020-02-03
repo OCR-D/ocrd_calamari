@@ -100,6 +100,11 @@ class CalamariRecognize(Processor):
                     line.set_TextEquiv([TextEquivType(Unicode=line_text, conf=line_conf)])
 
                     # Save word results
+                    #
+                    # Calamari OCR does not provide word positions, so we infer word positions from a. Unicode text
+                    # segmentation and b. the glyph positions. This is necessary because the PAGE XML format enforces
+                    # a strict hierarchy of lines > words > glyphs.
+
                     def unwanted(c):
                         return c == " "
 
