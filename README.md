@@ -13,6 +13,14 @@ This offers a OCR-D compliant workspace processor for some of the functionality 
 This processor only operates on the text line level and so needs a line segmentation (and by extension a binarized 
 image) as its input.
 
+In addition to the line text it also outputs glyph segmentation including
+per-glyph confidence values and per-glyph alternative predictions as provided
+by the Calamari OCR engine. Note that while Calamari does not provide word
+segmentation, this processor produces word segmentation inferred from Unicode
+text segmentation and the glyph positions. The provided glyph and word
+segmentation can be used for text extraction and highlighting, but is probably
+not useful for further image-based processing.
+
 ## Installation
 
 ### From PyPI
