@@ -116,6 +116,7 @@ class CalamariRecognize(Processor):
                     word_no = 0
                     i = 0
                     for word_text in uniseg.wordbreak.words(prediction.sentence):
+                        # XXX Re-use word segmentation from dinglehopper, i.e. support private use characters
                         word_length = len(word_text)
                         do_not_include = all(unwanted(c) for c in word_text)
 
@@ -126,6 +127,7 @@ class CalamariRecognize(Processor):
 
                             polygon = polygon_from_x0y0x1y1([word_start, 0, word_end, line_image.height])
                             points = points_from_polygon(coordinates_for_segment(polygon, None, line_coords))
+                            # XXX Crop to line polygon?
 
                             word = WordType(id='%s_word%04d' % (line.id, word_no), Coords=CoordsType(points))
                             word.add_TextEquiv(TextEquivType(Unicode=word_text))
