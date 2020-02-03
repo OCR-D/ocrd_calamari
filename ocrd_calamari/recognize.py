@@ -106,7 +106,6 @@ class CalamariRecognize(Processor):
                     word_no = 0
                     i = 0
                     for word_text in uniseg.wordbreak.words(prediction.sentence):
-                        print(word_text)
                         word_length = len(word_text)
                         do_not_include = all(unwanted(c) for c in word_text)
 
