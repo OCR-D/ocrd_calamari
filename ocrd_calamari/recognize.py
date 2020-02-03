@@ -106,6 +106,11 @@ class CalamariRecognize(Processor):
                     # a strict hierarchy of lines > words > glyphs.
 
                     def unwanted(c):
+                        """
+                        Define unwanted characters
+
+                        Words only containing these e.g. whitespace characters are not considered as words.
+                        """
                         return c == " "
 
                     word_no = 0
