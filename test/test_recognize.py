@@ -3,6 +3,7 @@ import shutil
 import subprocess
 import urllib.request
 from lxml import etree
+from glob import glob
 
 import pytest
 from ocrd.resolver import Resolver
@@ -10,9 +11,14 @@ from ocrd.resolver import Resolver
 from ocrd_calamari import CalamariRecognize
 from .base import assets
 
+
 METS_KANT = assets.url_of('kant_aufklaerung_1784-page-block-line-word_glyph/data/mets.xml')
 WORKSPACE_DIR = '/tmp/test-ocrd-calamari'
 CHECKPOINT = os.path.join(os.getcwd(), 'gt4histocr-calamari/*.ckpt.json')
+
+# Because XML namespace versions are so much fun, we not only use one, we use TWO!
+NSMAP = { "pc": "http://schema.primaresearch.org/PAGE/gts/pagecontent/2019-07-15" }
+NSMAP_GT = { "pc": "http://schema.primaresearch.org/PAGE/gts/pagecontent/2013-07-15" }
 
 
 @pytest.fixture
@@ -44,12 +50,20 @@ def workspace():
         ff = os.path.join(WORKSPACE_DIR, 'OCR-D-IMG', f)
         subprocess.call(['convert', ff, '-threshold', '50%', ff])
 
+    # Remove GT Words and TextEquivs, to not accidently check GT text instead of the OCR text
+    for of in workspace.mets.find_files(fileGrp="OCR-D-GT-SEG-LINE"):
+        workspace.download_file(of)
+    for to_remove in ["//pc:Word", "//pc:TextEquiv"]:
+        for ff in glob(os.path.join(WORKSPACE_DIR, "OCR-D-GT-SEG-LINE", "*")):
+            tree = etree.parse(ff)
+            for e in tree.xpath(to_remove, namespaces=NSMAP_GT):
+                e.getparent().remove(e)
+            tree.write(ff, xml_declaration=True, encoding="utf-8")
+
     return workspace
 
 
 def test_recognize(workspace):
-    # XXX Should remove GT text to really test this
-
     CalamariRecognize(
         workspace,
         input_file_grp="OCR-D-GT-SEG-LINE",
@@ -80,8 +94,6 @@ def test_word_segmentation(workspace):
     page1 = os.path.join(workspace.directory, "OCR-D-OCR-CALAMARI/OCR-D-OCR-CALAMARI_0001.xml")
     assert os.path.exists(page1)
     tree = etree.parse(page1)
-
-    NSMAP = { "pc": "http://schema.primaresearch.org/PAGE/gts/pagecontent/2019-07-15" }
 
     # The result should contain a TextLine that contains the text "December"
     line = tree.xpath(".//pc:TextLine[pc:TextEquiv/pc:Unicode[contains(text(),'December')]]", namespaces=NSMAP)[0]
