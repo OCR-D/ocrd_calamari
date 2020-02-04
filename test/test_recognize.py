@@ -30,10 +30,6 @@ def workspace():
             "https://github.com/OCR-D/assets/raw/master/data/kant_aufklaerung_1784/data/OCR-D-IMG/" + f,
             os.path.join(WORKSPACE_DIR, 'OCR-D-IMG', f))
 
-    return workspace
-
-
-def test_recognize(workspace):
     # The binarization options I have are:
     #
     # a. ocrd_kraken which tries to install cltsm, whose installation is borken on my machine (protobuf)
@@ -46,6 +42,10 @@ def test_recognize(workspace):
         ff = os.path.join(WORKSPACE_DIR, 'OCR-D-IMG', f)
         subprocess.call(['convert', ff, '-threshold', '50%', ff])
 
+    return workspace
+
+
+def test_recognize(workspace):
     # XXX Should remove GT text to really test this
 
     CalamariRecognize(
