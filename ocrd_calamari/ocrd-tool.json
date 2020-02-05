@@ -25,6 +25,12 @@
         "voter": {
           "description": "The voting algorithm to use",
           "type": "string", "default": "confidence_voter_default_ctc"
+        },
+        "textequiv_level": {
+          "type": "string",
+          "enum": ["line", "word", "glyph"],
+          "default": "line",
+          "description": "Deepest PAGE XML hierarchy level to include TextEquiv results for"
         }
       }
     }

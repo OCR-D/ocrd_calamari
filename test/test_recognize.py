@@ -87,6 +87,7 @@ def test_word_segmentation(workspace):
         output_file_grp="OCR-D-OCR-CALAMARI",
         parameter={
             "checkpoint": CHECKPOINT,
+            "textequiv_level": "word",   # Note that we're going down to word level here
         }
     ).process()
     workspace.save_mets()
@@ -105,6 +106,31 @@ def test_word_segmentation(workspace):
     words_text = " ".join(word.xpath("pc:TextEquiv/pc:Unicode", namespaces=NSMAP)[0].text for word in words)
     line_text = line.xpath("pc:TextEquiv/pc:Unicode", namespaces=NSMAP)[0].text
     assert words_text == line_text
+
+    # For extra measure, check that we're not seeing any glyphs, as we asked for textequiv_level == "word"
+    glyphs = tree.xpath("//pc:Glyph", namespaces=NSMAP)
+    assert len(glyphs) == 0
+
+
+def test_glyphs(workspace):
+    CalamariRecognize(
+        workspace,
+        input_file_grp="OCR-D-GT-SEG-LINE",
+        output_file_grp="OCR-D-OCR-CALAMARI",
+        parameter={
+            "checkpoint": CHECKPOINT,
+            "textequiv_level": "glyph",   # Note that we're going down to glyph level here
+        }
+    ).process()
+    workspace.save_mets()
+
+    page1 = os.path.join(workspace.directory, "OCR-D-OCR-CALAMARI/OCR-D-OCR-CALAMARI_0001.xml")
+    assert os.path.exists(page1)
+    tree = etree.parse(page1)
+
+    # The result should contain a lot of glyphs
+    glyphs = tree.xpath("//pc:Glyph", namespaces=NSMAP)
+    assert len(glyphs) >= 100
 
 
 # vim:tw=120:

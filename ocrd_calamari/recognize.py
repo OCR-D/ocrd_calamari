@@ -120,46 +120,48 @@ class CalamariRecognize(Processor):
                                 spaces = (c == ' ')
                         yield word
 
-                    word_no = 0
-                    i = 0
+                    if self.parameter['textequiv_level'] in ['word', 'glyph']:
+                        word_no = 0
+                        i = 0
 
-                    for word_text in _words(prediction.sentence):
-                        word_length = len(word_text)
-                        if not all(c == ' ' for c in word_text):
-                            word_positions = prediction.positions[i:i+word_length]
-                            word_start = word_positions[0].global_start
-                            word_end = word_positions[-1].global_end
+                        for word_text in _words(prediction.sentence):
+                            word_length = len(word_text)
+                            if not all(c == ' ' for c in word_text):
+                                word_positions = prediction.positions[i:i+word_length]
+                                word_start = word_positions[0].global_start
+                                word_end = word_positions[-1].global_end
 
-                            polygon = polygon_from_x0y0x1y1([word_start, 0, word_end, line_image.height])
-                            points = points_from_polygon(coordinates_for_segment(polygon, None, line_coords))
-                            # XXX Crop to line polygon?
-
-                            word = WordType(id='%s_word%04d' % (line.id, word_no), Coords=CoordsType(points))
-                            word.add_TextEquiv(TextEquivType(Unicode=word_text))
-
-                            for glyph_no, p in enumerate(word_positions):
-                                glyph_start = p.global_start
-                                glyph_end = p.global_end
-
-                                polygon = polygon_from_x0y0x1y1([glyph_start, 0, glyph_end, line_image.height])
+                                polygon = polygon_from_x0y0x1y1([word_start, 0, word_end, line_image.height])
                                 points = points_from_polygon(coordinates_for_segment(polygon, None, line_coords))
+                                # XXX Crop to line polygon?
 
-                                glyph = GlyphType(id='%s_glyph%04d' % (word.id, glyph_no), Coords=CoordsType(points))
+                                word = WordType(id='%s_word%04d' % (line.id, word_no), Coords=CoordsType(points))
+                                word.add_TextEquiv(TextEquivType(Unicode=word_text))
 
-                                chars = sorted(p.chars, key=lambda k: k.probability, reverse=True)
-                                char_index = 1  # Must start with 1, see https://ocr-d.github.io/page#multiple-textequivs
-                                for char in chars:
-                                    if char.char:
-                                        glyph.add_TextEquiv(TextEquivType(Unicode=char.char, index=char_index, conf=char.probability))
-                                        char_index += 1
-                                        # XXX Note that omission probabilities are not normalized?!
+                                if self.parameter['textequiv_level'] == 'glyph':
+                                    for glyph_no, p in enumerate(word_positions):
+                                        glyph_start = p.global_start
+                                        glyph_end = p.global_end
 
-                                word.add_Glyph(glyph)
+                                        polygon = polygon_from_x0y0x1y1([glyph_start, 0, glyph_end, line_image.height])
+                                        points = points_from_polygon(coordinates_for_segment(polygon, None, line_coords))
 
-                            line.add_Word(word)
-                            word_no += 1
+                                        glyph = GlyphType(id='%s_glyph%04d' % (word.id, glyph_no), Coords=CoordsType(points))
 
-                        i += word_length
+                                        chars = sorted(p.chars, key=lambda k: k.probability, reverse=True)
+                                        char_index = 1  # Must start with 1, see https://ocr-d.github.io/page#multiple-textequivs
+                                        for char in chars:
+                                            if char.char:
+                                                glyph.add_TextEquiv(TextEquivType(Unicode=char.char, index=char_index, conf=char.probability))
+                                                char_index += 1
+                                                # XXX Note that omission probabilities are not normalized?!
+
+                                        word.add_Glyph(glyph)
+
+                                line.add_Word(word)
+                                word_no += 1
+
+                            i += word_length
 
 
             _page_update_higher_textequiv_levels('line', pcgts)
