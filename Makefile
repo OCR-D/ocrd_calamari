@@ -44,6 +44,10 @@ gt4histocr-calamari:
 	tar xfv model.tar.xz && \
 	rm model.tar.xz
 
+# Example data
+actevedef_718448162:
+	wget https://qurator-data.de/examples/actevedef_718448162.zip && \
+	unzip actevedef_718448162.zip
 
 
 # pip install calamari

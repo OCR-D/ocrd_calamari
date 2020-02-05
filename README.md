@@ -46,18 +46,23 @@ ls gt4histocr-calamari
 ```
 
 ## Example Usage
+Before using `ocrd-calamari-recognize` get some example data and model, and
+prepare the document for OCR:
+```
+# Download model and example data
+make gt4histocr-calamari
+make actevedef_718448162
 
-~~~
-ocrd-calamari-recognize -p test-parameters.json -m mets.xml -I OCR-D-SEG-LINE -O OCR-D-OCR-CALAMARI
-~~~
+# Create binarized images and line segmentation using other OCR-D projects
+ocrd-olena-binarize -p '{ "impl": "sauvola-ms-split" }' -I OCR-D-IMG -O OCR-D-IMG-BINPAGE,OCR-D-IMG-BIN
+ocrd-tesserocr-segment-region -I OCR-D-IMG-BINPAGE -O OCR-D-SEG-REGION
+ocrd-tesserocr-segment-line -I OCR-D-SEG-REGION -O OCR-D-SEG-LINE
+```
 
-With `test-parameters.json`:
-~~~
-{
-    "checkpoint": "/path/to/for/example/gt4histocr-calamari/*.ckpt.json",
-    "textequiv_level": "line"
-}
-~~~
+Finally recognize the text using ocrd_calamari and the downloaded model:
+```
+ocrd-calamari-recognize -p '{ "checkpoint": "../gt4histocr-calamari/*.ckpt.json" }' -I OCR-D-SEG-LINE -O OCR-D-OCR-CALAMARI
+```
 
 You may want to have a look at the [ocrd-tool.json](ocrd_calamari/ocrd-tool.json) descriptions
 for additional parameters and default values.
