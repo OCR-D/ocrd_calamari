@@ -59,7 +59,7 @@ With `test-parameters.json`:
 }
 ~~~
 
-You may want to have a look at the [ocrd-tool.json](ocrd-tool.json) descriptions
+You may want to have a look at the [ocrd-tool.json](ocrd_calamari/ocrd-tool.json) descriptions
 for additional parameters and default values.
 
 ## Development & Testing
