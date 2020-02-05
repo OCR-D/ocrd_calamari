@@ -31,6 +31,12 @@
           "enum": ["line", "word", "glyph"],
           "default": "line",
           "description": "Deepest PAGE XML hierarchy level to include TextEquiv results for"
+        },
+        "glyph_conf_cutoff": {
+          "type": "number",
+          "format": "float",
+          "default": 0.001,
+          "description": "Only include glyph alternatives with confidences above this threshold"
         }
       }
     }

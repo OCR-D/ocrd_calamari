@@ -59,6 +59,9 @@ With `test-parameters.json`:
 }
 ~~~
 
+You may want to have a look at the [ocrd-tool.json](ocrd-tool.json) descriptions
+for additional parameters and default values.
+
 ## Development & Testing
 For information regarding development and testing, please see
 [README-DEV.md](README-DEV.md).
