@@ -54,6 +54,7 @@ make gt4histocr-calamari
 make actevedef_718448162
 
 # Create binarized images and line segmentation using other OCR-D projects
+cd actevedef_718448162
 ocrd-olena-binarize -p '{ "impl": "sauvola-ms-split" }' -I OCR-D-IMG -O OCR-D-IMG-BINPAGE,OCR-D-IMG-BIN
 ocrd-tesserocr-segment-region -I OCR-D-IMG-BINPAGE -O OCR-D-SEG-REGION
 ocrd-tesserocr-segment-line -I OCR-D-SEG-REGION -O OCR-D-SEG-LINE
