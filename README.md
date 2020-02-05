@@ -54,7 +54,7 @@ ocrd-calamari-recognize -p test-parameters.json -m mets.xml -I OCR-D-SEG-LINE -O
 With `test-parameters.json`:
 ~~~
 {
-    "checkpoint": "/path/to/some/trained/models/*.ckpt.json",
+    "checkpoint": "/path/to/for/example/gt4histocr-calamari/*.ckpt.json",
     "textequiv_level": "line"
 }
 ~~~
