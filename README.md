@@ -55,7 +55,7 @@ With `test-parameters.json`:
 ~~~
 {
     "checkpoint": "/path/to/some/trained/models/*.ckpt.json",
-    "textequiv_level": "line",
+    "textequiv_level": "line"
 }
 ~~~
 
