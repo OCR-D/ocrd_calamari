@@ -10,6 +10,7 @@ COPY Makefile .
 COPY setup.py .
 COPY ocrd-tool.json .
 COPY requirements.txt .
+COPY README.md .
 COPY ocrd_calamari ocrd_calamari
 
 RUN make calamari/build
