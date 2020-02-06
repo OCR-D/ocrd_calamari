@@ -11,9 +11,7 @@ help:
 	@echo "  Targets"
 	@echo ""
 	@echo "    install          Install ocrd_calamari"
-	@echo "    calamari         Clone calamari repo"
 	@echo "    gt4histocr-calamari Get GT4HistOCR Calamari model (from SBB)"
-	@echo "    calamari/build   pip install calamari"
 	@echo "    deps-test        Install testing python deps via pip"
 	@echo "    repo/assets      Clone OCR-D/assets to ./repo/assets"
 	@echo "    test/assets      Setup test assets"
@@ -33,9 +31,6 @@ help:
 install:
 	$(PIP_INSTALL) .
 
-# Clone calamari repo
-calamari:
-	$(GIT_CLONE) https://github.com/chwick/calamari
 
 gt4histocr-calamari:
 	mkdir gt4histocr-calamari
@@ -49,10 +44,6 @@ actevedef_718448162:
 	wget https://qurator-data.de/examples/actevedef_718448162.zip && \
 	unzip actevedef_718448162.zip
 
-
-# pip install calamari
-calamari/build: calamari
-	cd calamari && $(PIP_INSTALL) .
 
 
 #
