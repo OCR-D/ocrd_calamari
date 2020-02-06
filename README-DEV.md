@@ -10,11 +10,11 @@ make test
 
 Release
 -------
-* Update ocrd-tool.json version
-* Update setup.py version
-* git commit -m 'v<version>'
-* git tag -m 'v<version>' 'v<version>'
-* git push --tags
+* Update `ocrd-tool.json` version
+* Update `setup.py` version
+* `git commit -m 'v<version>'`
+* `git tag -m 'v<version>' 'v<version>'`
+* `git push --tags`
 
 PyPI:
 * `rm -rf dist/` or backup if `dist/` exists already
