@@ -14,7 +14,8 @@ COPY README.md .
 COPY ocrd_calamari ocrd_calamari
 
 RUN make calamari/build
-RUN pip3 install .
+RUN pip3 install --upgrade pip && \
+    pip3 install .
 
 ENTRYPOINT ["/usr/local/bin/ocrd-calamari-recognize"]
 
