@@ -17,5 +17,6 @@ Release
 * git push --tags
 
 PyPI:
-* python sdist bdist_wheel
-* twine upload dist/ocrd_calamari-<version>*
+* `rm -rf dist/` or backup if `dist/` exists already
+* In the virtualenv: `python setup.py sdist bdist_wheel`
+* `twine upload dist/ocrd_calamari-<version>*`
