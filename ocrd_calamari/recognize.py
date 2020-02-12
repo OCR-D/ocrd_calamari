@@ -92,8 +92,16 @@ class CalamariRecognize(Processor):
                     #
                     # XXX Check Calamari's built-in post-processing on prediction.sentence
 
+
+                    def _sort_chars(p):
+                        """Filter and sort chars of prediction p"""
+                        chars = p.chars
+                        chars = [c for c in chars if c.char]  # XXX Note that omission probabilities are not normalized?!
+                        chars = [c for c in chars if c.probability >= self.parameter['glyph_conf_cutoff']]
+                        chars = sorted(chars, key=lambda k: k.probability, reverse=True)
+                        return chars
                     def _drop_leading_spaces(positions):
-                        return list(itertools.dropwhile(lambda p: p.chars[0].char == " ", positions))
+                        return list(itertools.dropwhile(lambda p: _sort_chars(p)[0].char == " ", positions))
                     def _drop_trailing_spaces(positions):
                         return list(reversed(_drop_leading_spaces(reversed(positions))))
                     def _drop_double_spaces(positions):
@@ -184,17 +192,10 @@ class CalamariRecognize(Processor):
 
                                         glyph = GlyphType(id='%s_glyph%04d' % (word.id, glyph_no), Coords=CoordsType(points))
 
-                                        # Filter predictions
-                                        chars = p.chars
-                                        chars = [c for c in chars if c.char]  # XXX Note that omission probabilities are not normalized?!
-                                        chars = [c for c in chars if c.probability >= self.parameter['glyph_conf_cutoff']]
-
-                                        # Sort and add predictions (= TextEquivs)
-                                        chars = sorted(chars, key=lambda k: k.probability, reverse=True)
-                                        char_index = 1  # Must start with 1, see https://ocr-d.github.io/page#multiple-textequivs
-                                        for char in chars:
+                                        # Add predictions (= TextEquivs)
+                                        char_index_start = 1  # Must start with 1, see https://ocr-d.github.io/page#multiple-textequivs
+                                        for char_index, char in enumerate(_sort_chars(p), start=char_index_start):
                                             glyph.add_TextEquiv(TextEquivType(Unicode=char.char, index=char_index, conf=char.probability))
-                                            char_index += 1
 
                                         word.add_Glyph(glyph)
 
