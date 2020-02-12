@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import os
+import itertools
 from glob import glob
 
 import numpy as np
@@ -84,8 +85,39 @@ class CalamariRecognize(Processor):
                     prediction = self.voter.vote_prediction_result(raw_results)
                     prediction.id = "voted"
 
-                    line_text = prediction.sentence
-                    line_conf = prediction.avg_char_probability
+                    # Build line text on our own
+                    #
+                    # Calamari does whitespace post-processing on prediction.sentence, while it does not do the same
+                    # on prediction.positions. Do it on our own to have consistency.
+                    #
+                    # XXX Check Calamari's built-in post-processing on prediction.sentence
+
+                    def _drop_leading_spaces(positions):
+                        return list(itertools.dropwhile(lambda p: p.chars[0].char == " ", positions))
+                    def _drop_trailing_spaces(positions):
+                        return list(reversed(_drop_leading_spaces(reversed(positions))))
+                    def _drop_double_spaces(positions):
+                        def _drop_double_spaces_generator(positions):
+                            last_was_space = False
+                            for p in positions:
+                                if p.chars[0].char == " ":
+                                    if not last_was_space:
+                                        yield p
+                                    last_was_space = True
+                                else:
+                                    yield p
+                                    last_was_space = False
+                        return list(_drop_double_spaces_generator(positions))
+                    positions = prediction.positions
+                    positions = _drop_leading_spaces(positions)
+                    positions = _drop_trailing_spaces(positions)
+                    positions = _drop_double_spaces(positions)
+                    positions = list(positions)
+
+                    line_text = ''.join(p.chars[0].char for p in positions)
+                    if line_text != prediction.sentence:
+                        log.warning("Our own line text is not the same as Calamari's: '%s' != '%s'",
+                                    line_text, prediction.sentence)
 
                     # Delete existing results
                     if line.get_TextEquiv():
@@ -96,7 +128,9 @@ class CalamariRecognize(Processor):
                     line.set_Word([])
 
                     # Save line results
+                    line_conf = prediction.avg_char_probability
                     line.set_TextEquiv([TextEquivType(Unicode=line_text, conf=line_conf)])
+
 
                     # Save word results
                     #
@@ -124,10 +158,12 @@ class CalamariRecognize(Processor):
                         word_no = 0
                         i = 0
 
-                        for word_text in _words(prediction.sentence):
+
+
+                        for word_text in _words(line_text):
                             word_length = len(word_text)
                             if not all(c == ' ' for c in word_text):
-                                word_positions = prediction.positions[i:i+word_length]
+                                word_positions = positions[i:i+word_length]
                                 word_start = word_positions[0].global_start
                                 word_end = word_positions[-1].global_end
 
