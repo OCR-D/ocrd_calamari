@@ -122,7 +122,7 @@ class CalamariRecognize(Processor):
                     positions = _drop_double_spaces(positions)
                     positions = list(positions)
 
-                    line_text = ''.join(p.chars[0].char for p in positions)
+                    line_text = ''.join(_sort_chars(p)[0].char for p in positions)
                     if line_text != prediction.sentence:
                         log.warning("Our own line text is not the same as Calamari's: '%s' != '%s'",
                                     line_text, prediction.sentence)
