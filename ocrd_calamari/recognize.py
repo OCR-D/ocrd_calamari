@@ -73,7 +73,7 @@ class CalamariRecognize(Processor):
                 textlines = region.get_TextLine()
                 log.info("About to recognize %i lines of region '%s'", len(textlines), region.id)
                 for (line_no, line) in enumerate(textlines):
-                    log.debug("Recognizing line '%s' in region '%s'", line_no, region.id)
+                    log.debug("Recognizing line '%s' in region '%s'", line.id, region.id)
 
                     line_image, line_coords = self.workspace.image_from_segment(line, region_image, region_xywh)
                     line_image_np = np.array(line_image, dtype=np.uint8)
