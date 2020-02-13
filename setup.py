@@ -11,7 +11,7 @@ setup(
     long_description_content_type='text/markdown',
     author='Konstantin Baierer, Mike Gerber',
     author_email='unixprog@gmail.com, mike.gerber@sbb.spk-berlin.de',
-    url='https://github.com/kba/ocrd_calamari',
+    url='https://github.com/OCR-D/ocrd_calamari',
     license='Apache License 2.0',
     packages=find_packages(exclude=('tests', 'docs')),
     install_requires=Path('requirements.txt').read_text().split('\n'),
