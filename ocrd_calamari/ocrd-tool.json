@@ -1,5 +1,5 @@
 {
-  "git_url": "https://github.com/kba/ocrd_calamari",
+  "git_url": "https://github.com/OCR-D/ocrd_calamari",
   "version": "0.0.5",
   "tools": {
     "ocrd-calamari-recognize": {
