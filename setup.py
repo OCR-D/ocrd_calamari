@@ -13,7 +13,7 @@ setup(
     author_email='unixprog@gmail.com, mike.gerber@sbb.spk-berlin.de',
     url='https://github.com/OCR-D/ocrd_calamari',
     license='Apache License 2.0',
-    packages=find_packages(exclude=('tests', 'docs')),
+    packages=find_packages(exclude=('test', 'docs')),
     install_requires=Path('requirements.txt').read_text().split('\n'),
     package_data={
         '': ['*.json', '*.yml', '*.yaml'],
