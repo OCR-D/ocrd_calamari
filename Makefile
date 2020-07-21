@@ -37,7 +37,7 @@ install:
 gt4histocr-calamari:
 	mkdir gt4histocr-calamari
 	cd gt4histocr-calamari && \
-	wget https://qurator-data.de/calamari-models/GT4HistOCR/model.tar.xz && \
+	wget https://qurator-data.de/calamari-models/GT4HistOCR/2019-12-11T11_10+0100/model.tar.xz && \
 	tar xfv model.tar.xz && \
 	rm model.tar.xz
 
