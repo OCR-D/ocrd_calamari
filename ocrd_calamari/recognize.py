@@ -222,6 +222,7 @@ class CalamariRecognize(Processor):
 
 
             file_id = self._make_file_id(input_file, n)
+            pcgts.set_pcGtsId(file_id)
             self.workspace.add_file(
                 ID=file_id,
                 file_grp=self.output_file_grp,
