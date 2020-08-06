@@ -15,6 +15,7 @@ Releasing
 * `git commit -m 'v<version>'`
 * `git tag -m 'v<version>' 'v<version>'`
 * `git push --tags`
+* Do a release on GitHub
 
 ### Uploading to PyPI
 * `rm -rf dist/` or backup if `dist/` exists already
