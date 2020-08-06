@@ -51,6 +51,8 @@ def workspace():
         subprocess.call(['convert', ff, '-threshold', '50%', ff])
 
     # Remove GT Words and TextEquivs, to not accidently check GT text instead of the OCR text
+    # XXX Review data again
+    # XXX Make this more robust against namespace version changes
     for of in workspace.mets.find_files(fileGrp="OCR-D-GT-SEG-LINE"):
         workspace.download_file(of)
     for to_remove in ["//pc:Word", "//pc:TextEquiv"]:
