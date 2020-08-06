@@ -20,6 +20,7 @@ from ocrd_models.ocrd_page import (
 from ocrd_utils import (
         getLogger, concat_padded,
         coordinates_for_segment, points_from_polygon, polygon_from_x0y0x1y1,
+        make_file_id, assert_file_grp_cardinality,
         MIMETYPE_PAGE
 )
 
@@ -46,16 +47,13 @@ class CalamariRecognize(Processor):
         voter_params.type = VoterParams.Type.Value(self.parameter['voter'].upper())
         self.voter = voter_from_proto(voter_params)
 
-    def _make_file_id(self, input_file, n):
-        file_id = input_file.ID.replace(self.input_file_grp, self.output_file_grp)
-        if file_id == input_file.ID:
-            file_id = concat_padded(self.output_file_grp, n)
-        return file_id
-
     def process(self):
         """
         Performs the recognition.
         """
+
+        assert_file_grp_cardinality(self.input_file_grp, 1)
+        assert_file_grp_cardinality(self.output_file_grp, 1)
 
         self._init_calamari()
 
@@ -221,7 +219,7 @@ class CalamariRecognize(Processor):
                                             for name in self.parameter.keys()])]))
 
 
-            file_id = self._make_file_id(input_file, n)
+            file_id = make_file_id(input_file, self.output_file_grp)
             pcgts.set_pcGtsId(file_id)
             self.workspace.add_file(
                 ID=file_id,
