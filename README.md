@@ -22,6 +22,8 @@ segmentation and the glyph positions. The provided glyph and word segmentation
 can be used for text extraction and highlighting, but is probably not useful for
 further image-based processing.
 
+![Example output as viewed in PAGE Viewer](https://github.com/OCR-D/ocrd_calamari/raw/screenshots/output-in-page-viewer.jpg)
+
 ## Installation
 
 ### From PyPI
