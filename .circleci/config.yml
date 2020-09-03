@@ -23,3 +23,6 @@ workflows:
   build:
     jobs:
       - build-python36
+          branches:
+            ignore:
+              - screenshots
