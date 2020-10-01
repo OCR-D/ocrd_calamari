@@ -27,7 +27,6 @@ from ocrd_utils import (
 from ocrd_calamari.config import OCRD_TOOL, TF_CPP_MIN_LOG_LEVEL
 
 TOOL = 'ocrd-calamari-recognize'
-log = getLogger('processor.CalamariRecognize')
 
 
 class CalamariRecognize(Processor):
@@ -51,6 +50,7 @@ class CalamariRecognize(Processor):
         """
         Performs the recognition.
         """
+        log = getLogger('processor.CalamariRecognize')
 
         assert_file_grp_cardinality(self.input_file_grp, 1)
         assert_file_grp_cardinality(self.output_file_grp, 1)
