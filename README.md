@@ -8,7 +8,7 @@
 
 ## Introduction
 
-This offers a OCR-D compliant workspace processor for the functionality of Calamari OCR.
+**ocrd_calamari** offers a [OCR-D](https://ocr-d.de) compliant workspace processor for the functionality of Calamari OCR. It uses OCR-D workspaces (METS) with [PAGE XML](https://github.com/PRImA-Research-Lab/PAGE-XML) documents as input and output.
 
 This processor only operates on the text line level and so needs a line segmentation (and by extension a binarized 
 image) as its input.
