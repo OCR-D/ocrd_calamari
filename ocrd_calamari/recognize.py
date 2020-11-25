@@ -70,13 +70,16 @@ class CalamariRecognize(Processor):
 
                 textlines = region.get_TextLine()
                 log.info("About to recognize %i lines of region '%s'", len(textlines), region.id)
-                for (line_no, line) in enumerate(textlines):
-                    log.debug("Recognizing line '%s' in region '%s'", line.id, region.id)
 
+                line_images_np = []
+                for (line_no, line) in enumerate(textlines):
                     line_image, line_coords = self.workspace.image_from_segment(line, region_image, region_xywh)
                     line_image_np = np.array(line_image, dtype=np.uint8)
+                    line_images_np.append(line_image_np)
+                raw_results_all = self.predictor.predict_raw(line_images_np, progress_bar=False)
 
-                    raw_results = list(self.predictor.predict_raw([line_image_np], progress_bar=False))[0]
+                for line, raw_results in zip(textlines, raw_results_all):
+
                     for i, p in enumerate(raw_results):
                         p.prediction.id = "fold_{}".format(i)
 
