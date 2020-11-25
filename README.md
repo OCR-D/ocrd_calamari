@@ -41,8 +41,8 @@ pip install .
 Download models trained on GT4HistOCR data:
 
 ```
-make gt4histocr-calamari
-ls gt4histocr-calamari
+make gt4histocr-calamari1
+ls gt4histocr-calamari1
 ```
 
 ## Example Usage
@@ -50,7 +50,7 @@ Before using `ocrd-calamari-recognize` get some example data and model, and
 prepare the document for OCR:
 ```
 # Download model and example data
-make gt4histocr-calamari
+make gt4histocr-calamari1
 make actevedef_718448162
 
 # Create binarized images and line segmentation using other OCR-D projects
@@ -62,7 +62,7 @@ ocrd-tesserocr-segment-line -I OCR-D-SEG-REGION -O OCR-D-SEG-LINE
 
 Finally recognize the text using ocrd_calamari and the downloaded model:
 ```
-ocrd-calamari-recognize -p '{ "checkpoint": "../gt4histocr-calamari/*.ckpt.json" }' -I OCR-D-SEG-LINE -O OCR-D-OCR-CALAMARI
+ocrd-calamari-recognize -p '{ "checkpoint": "../gt4histocr-calamari1/*.ckpt.json" }' -I OCR-D-SEG-LINE -O OCR-D-OCR-CALAMARI
 ```
 
 You may want to have a look at the [ocrd-tool.json](ocrd_calamari/ocrd-tool.json) descriptions

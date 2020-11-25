@@ -11,7 +11,7 @@ help:
 	@echo "  Targets"
 	@echo ""
 	@echo "    install          Install ocrd_calamari"
-	@echo "    gt4histocr-calamari Get GT4HistOCR Calamari model (from SBB)"
+	@echo "    gt4histocr-calamari1 Get GT4HistOCR Calamari model (from SBB)"
 	@echo "    actevedef_718448162 Download example data"
 	@echo "    deps-test        Install testing python deps via pip"
 	@echo "    repo/assets      Clone OCR-D/assets to ./repo/assets"
@@ -34,9 +34,9 @@ install:
 
 
 # Get GT4HistOCR Calamari model (from SBB)
-gt4histocr-calamari:
-	mkdir gt4histocr-calamari
-	cd gt4histocr-calamari && \
+gt4histocr-calamari1:
+	mkdir -p gt4histocr-calamari1
+	cd gt4histocr-calamari1 && \
 	wget https://qurator-data.de/calamari-models/GT4HistOCR/2019-12-11T11_10+0100/model.tar.xz && \
 	tar xfv model.tar.xz && \
 	rm model.tar.xz
@@ -73,12 +73,12 @@ assets-clean:
 	rm -rf test/assets
 
 # Run unit tests
-test: test/assets gt4histocr-calamari
+test: test/assets gt4histocr-calamari1
 	# declare -p HTTP_PROXY
 	$(PYTHON) -m pytest --continue-on-collection-errors test $(PYTEST_ARGS)
 
 # Run unit tests and determine test coverage
-coverage: test/assets gt4histocr-calamari
+coverage: test/assets gt4histocr-calamari1
 	coverage erase
 	make test PYTHON="coverage run"
 	coverage report
