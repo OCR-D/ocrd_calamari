@@ -47,6 +47,8 @@ make gt4histocr-calamari1
 ls gt4histocr-calamari1
 ```
 
+Manual download: [model.tar.xz](https://qurator-data.de/calamari-models/GT4HistOCR/2019-12-11T11_10+0100/model.tar.xz)
+
 ## Example Usage
 Before using `ocrd-calamari-recognize` get some example data and model, and
 prepare the document for OCR:
