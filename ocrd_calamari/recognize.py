@@ -5,6 +5,7 @@ import itertools
 from glob import glob
 
 import numpy as np
+from calamari_ocr import __version__ as calamari_version
 from calamari_ocr.ocr import MultiPredictor
 from calamari_ocr.ocr.voting import voter_from_proto
 from calamari_ocr.proto import VoterParams
@@ -33,7 +34,7 @@ class CalamariRecognize(Processor):
 
     def __init__(self, *args, **kwargs):
         kwargs['ocrd_tool'] = OCRD_TOOL['tools'][TOOL]
-        kwargs['version'] = OCRD_TOOL['version']
+        kwargs['version'] = '%s (calamari %s)' % (OCRD_TOOL['version'], calamari_version)
         super(CalamariRecognize, self).__init__(*args, **kwargs)
 
     def _init_calamari(self):
