@@ -27,6 +27,9 @@ from ocrd_utils import (
 
 from ocrd_calamari.config import OCRD_TOOL, TF_CPP_MIN_LOG_LEVEL
 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = TF_CPP_MIN_LOG_LEVEL
+from tensorflow import __version__ as tensorflow_version
+
 TOOL = 'ocrd-calamari-recognize'
 
 
@@ -34,11 +37,10 @@ class CalamariRecognize(Processor):
 
     def __init__(self, *args, **kwargs):
         kwargs['ocrd_tool'] = OCRD_TOOL['tools'][TOOL]
-        kwargs['version'] = '%s (calamari %s)' % (OCRD_TOOL['version'], calamari_version)
+        kwargs['version'] = '%s (calamari %s, tensorflow %s)' % (OCRD_TOOL['version'], calamari_version, tensorflow_version)
         super(CalamariRecognize, self).__init__(*args, **kwargs)
 
     def _init_calamari(self):
-        os.environ['TF_CPP_MIN_LOG_LEVEL'] = TF_CPP_MIN_LOG_LEVEL
 
         checkpoints = glob(self.parameter['checkpoint'])
         self.predictor = MultiPredictor(checkpoints=checkpoints)
