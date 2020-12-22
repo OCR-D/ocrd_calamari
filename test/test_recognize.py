@@ -14,8 +14,8 @@ from .base import assets
 
 METS_KANT = assets.url_of('kant_aufklaerung_1784-page-region-line-word_glyph/data/mets.xml')
 WORKSPACE_DIR = '/tmp/test-ocrd-calamari'
-CHECKPPOINT_DIR = os.path.join(os.getcwd(), 'gt4histocr-calamari1')
-CHECKPOINT = os.path.join(CHECKPPOINT_DIR, '*.ckpt.json')
+CHECKPOINT_DIR = os.path.join(os.getcwd(), 'gt4histocr-calamari1')
+CHECKPOINT = os.path.join(CHECKPOINT_DIR, '*.ckpt.json')
 
 # Because XML namespace versions are so much fun, we not only use one, we use TWO!
 NSMAP = { "pc": "http://schema.primaresearch.org/PAGE/gts/pagecontent/2019-07-15" }
@@ -88,7 +88,7 @@ def test_recognize_with_checkpoint_dir(workspace):
         input_file_grp="OCR-D-GT-SEG-LINE",
         output_file_grp="OCR-D-OCR-CALAMARI",
         parameter={
-            "checkpoin_dir": CHECKPOINT_DIR,
+            "checkpoint_dir": CHECKPOINT_DIR,
         }
     ).process()
     workspace.save_mets()
