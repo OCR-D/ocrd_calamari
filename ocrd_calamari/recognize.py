@@ -40,6 +40,8 @@ class CalamariRecognize(Processor):
     def _init_calamari(self):
         os.environ['TF_CPP_MIN_LOG_LEVEL'] = TF_CPP_MIN_LOG_LEVEL
 
+        if self.parameter['checkpoint_dir']:
+            self.parameter['checkpoint'] = '%s/*.ckpt.json' % self.parameter['checkpoint_dir']
         checkpoints = glob(self.parameter['checkpoint'])
         self.predictor = MultiPredictor(checkpoints=checkpoints)
 
