@@ -41,7 +41,8 @@ class CalamariRecognize(Processor):
         os.environ['TF_CPP_MIN_LOG_LEVEL'] = TF_CPP_MIN_LOG_LEVEL
 
         if self.parameter.get('checkpoint_dir', None):
-            self.parameter['checkpoint'] = '%s/*.ckpt.json' % self.parameter['checkpoint_dir']
+            resolved = self.resolve_resource(self.parameter['checkpoint_dir'])
+            self.parameter['checkpoint'] = '%s/*.ckpt.json' % resolved
         checkpoints = glob(self.parameter['checkpoint'])
         self.predictor = MultiPredictor(checkpoints=checkpoints)
 
