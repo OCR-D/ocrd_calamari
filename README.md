@@ -69,6 +69,13 @@ Finally recognize the text using ocrd_calamari and the downloaded model:
 ocrd-calamari-recognize -p '{ "checkpoint": "../gt4histocr-calamari1/*.ckpt.json" }' -I OCR-D-SEG-LINE -O OCR-D-OCR-CALAMARI
 ```
 
+or
+
+```
+ocrd-calamari-recognize -P checkpoint_dir ../gt4histocr-calamari1 -I OCR-D-SEG-LINE -O OCR-D-OCR-CALAMARI
+```
+
+
 You may want to have a look at the [ocrd-tool.json](ocrd_calamari/ocrd-tool.json) descriptions
 for additional parameters and default values.
 

@@ -18,6 +18,10 @@
         "OCR-D-OCR-CALAMARI"
       ],
       "parameters": {
+        "checkpoint_dir": {
+          "description": "The directory containing calamari model files (*.ckpt.json). Uses all checkpoints in that directory",
+          "type": "string", "format": "file", "cacheable": true
+        },
         "checkpoint": {
           "description": "The calamari model files (*.ckpt.json)",
           "type": "string", "format": "file", "cacheable": true
