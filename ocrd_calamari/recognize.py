@@ -79,6 +79,7 @@ class CalamariRecognize(Processor):
                 line_images_np = []
                 for (line_no, line) in enumerate(textlines):
                     line_image, line_coords = self.workspace.image_from_segment(line, region_image, region_xywh)
+                    line_image = line_image if all(line_image.size) else [[0]]
                     line_image_np = np.array(line_image, dtype=np.uint8)
                     line_images_np.append(line_image_np)
                 raw_results_all = self.predictor.predict_raw(line_images_np, progress_bar=False)
