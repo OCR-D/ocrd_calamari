@@ -59,20 +59,20 @@ make actevedef_718448162
 
 # Create binarized images and line segmentation using other OCR-D projects
 cd actevedef_718448162
-ocrd-olena-binarize -p '{ "impl": "sauvola-ms-split" }' -I OCR-D-IMG -O OCR-D-IMG-BINPAGE,OCR-D-IMG-BIN
-ocrd-tesserocr-segment-region -I OCR-D-IMG-BINPAGE -O OCR-D-SEG-REGION
+ocrd-olena-binarize -P impl sauvola-ms-split -I OCR-D-IMG -O OCR-D-IMG-BIN
+ocrd-tesserocr-segment-region -I OCR-D-IMG-BIN -O OCR-D-SEG-REGION
 ocrd-tesserocr-segment-line -I OCR-D-SEG-REGION -O OCR-D-SEG-LINE
 ```
 
 Finally recognize the text using ocrd_calamari and the downloaded model:
 ```
-ocrd-calamari-recognize -p '{ "checkpoint": "../gt4histocr-calamari1/*.ckpt.json" }' -I OCR-D-SEG-LINE -O OCR-D-OCR-CALAMARI
+ocrd-calamari-recognize -P checkpoint "../gt4histocr-calamari1/*.ckpt.json" -I OCR-D-SEG-LINE -O OCR-D-OCR-CALAMARI
 ```
 
 or
 
 ```
-ocrd-calamari-recognize -P checkpoint_dir ../gt4histocr-calamari1 -I OCR-D-SEG-LINE -O OCR-D-OCR-CALAMARI
+ocrd-calamari-recognize -P checkpoint_dir "../gt4histocr-calamari1" -I OCR-D-SEG-LINE -O OCR-D-OCR-CALAMARI
 ```
 
 
