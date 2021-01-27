@@ -40,7 +40,7 @@ class CalamariRecognize(Processor):
     def _init_calamari(self):
         os.environ['TF_CPP_MIN_LOG_LEVEL'] = TF_CPP_MIN_LOG_LEVEL
 
-        if self.parameter.get('checkpoint_dir', None):
+        if not self.parameter.get('checkpoint', None) and self.parameter.get('checkpoint_dir', None):
             resolved = self.resolve_resource(self.parameter['checkpoint_dir'])
             self.parameter['checkpoint'] = '%s/*.ckpt.json' % resolved
         checkpoints = glob(self.parameter['checkpoint'])
