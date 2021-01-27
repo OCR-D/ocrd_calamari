@@ -42,8 +42,9 @@ class CalamariRecognize(Processor):
 
     def _init_calamari(self):
 
-        if self.parameter.get('checkpoint_dir', None):
-            self.parameter['checkpoint'] = '%s/*.ckpt.json' % self.parameter['checkpoint_dir']
+        if not self.parameter.get('checkpoint', None) and self.parameter.get('checkpoint_dir', None):
+            resolved = self.resolve_resource(self.parameter['checkpoint_dir'])
+            self.parameter['checkpoint'] = '%s/*.ckpt.json' % resolved
         checkpoints = glob(self.parameter['checkpoint'])
         self.predictor = MultiPredictor(checkpoints=checkpoints)
 

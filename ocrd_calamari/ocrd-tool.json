@@ -20,7 +20,7 @@
       "parameters": {
         "checkpoint_dir": {
           "description": "The directory containing calamari model files (*.ckpt.json). Uses all checkpoints in that directory",
-          "type": "string", "format": "file", "cacheable": true
+          "type": "string", "format": "file", "cacheable": true, "default": "qurator-gt4histocr-1.0"
         },
         "checkpoint": {
           "description": "The calamari model files (*.ckpt.json)",
