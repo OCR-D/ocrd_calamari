@@ -10,8 +10,7 @@ make test
 
 Releasing
 ---------
-* Update `ocrd-tool.json` version
-* Update `setup.py` version
+* Update `ocrd-tool.json` version (the `setup.py` version is read from this)
 * `git commit -m 'v<version>'`
 * `git tag -m 'v<version>' 'v<version>'`
 * `git push --tags`

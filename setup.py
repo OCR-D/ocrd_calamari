@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
 from pathlib import Path
+import json
 
 from setuptools import setup, find_packages
 
+with open('./ocrd-tool.json', 'r') as f:
+    version = json.load(f)['version']
+
 setup(
     name='ocrd_calamari',
-    version='1.0.1',
+    version=version,
     description='Calamari bindings',
     long_description=Path('README.md').read_text(),
     long_description_content_type='text/markdown',
