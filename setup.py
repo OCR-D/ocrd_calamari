@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='ocrd_calamari',
-    version='1.0.0',
+    version='1.0.1',
     description='Calamari bindings',
     long_description=Path('README.md').read_text(),
     long_description_content_type='text/markdown',
