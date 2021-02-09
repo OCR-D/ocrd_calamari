@@ -6,11 +6,11 @@ from lxml import etree
 from glob import glob
 
 import pytest
+import logging
 from ocrd.resolver import Resolver
 
 from ocrd_calamari import CalamariRecognize
 from .base import assets
-
 
 METS_KANT = assets.url_of('kant_aufklaerung_1784-page-region-line-word_glyph/data/mets.xml')
 WORKSPACE_DIR = '/tmp/test-ocrd-calamari'
@@ -97,6 +97,19 @@ def test_recognize_with_checkpoint_dir(workspace):
     assert os.path.exists(page1)
     with open(page1, "r", encoding="utf-8") as f:
         assert "verſchuldeten" in f.read()
+
+
+def test_recognize_should_warn_if_given_rgb_image_and_single_channel_model(workspace, caplog):
+    caplog.set_level(logging.WARNING)
+    CalamariRecognize(
+        workspace,
+        input_file_grp="OCR-D-GT-SEG-LINE",
+        output_file_grp="OCR-D-OCR-CALAMARI-BROKEN",
+        parameter={'checkpoint': CHECKPOINT}
+    ).process()
+
+    interesting_log_messages = [t[2] for t in caplog.record_tuples if "Using raw image" in t[2]]
+    assert len(interesting_log_messages) > 10  # For every line!
 
 
 def test_word_segmentation(workspace):
