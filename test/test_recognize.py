@@ -130,7 +130,7 @@ def test_word_segmentation(workspace):
 
     # The result should contain a TextLine that contains the text "December"
     line = tree.xpath(".//pc:TextLine[pc:TextEquiv/pc:Unicode[contains(text(),'December')]]", namespaces=NSMAP)[0]
-    assert line
+    assert line is not None
 
     # The textline should a. contain multiple words and b. these should concatenate fine to produce the same line text
     words = line.xpath(".//pc:Word", namespaces=NSMAP)
