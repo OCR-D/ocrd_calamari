@@ -95,8 +95,8 @@ def test_recognize_with_checkpoint_dir(workspace):
 
     page1 = os.path.join(workspace.directory, "OCR-D-OCR-CALAMARI/OCR-D-OCR-CALAMARI_0001.xml")
     assert os.path.exists(page1)
-    with open(page1, 'r', encoding='utf-8') as f:
-        assert 'verſchuldeten' in f.read()
+    with open(page1, "r", encoding="utf-8") as f:
+        assert "verſchuldeten" in f.read()
 
 
 def test_recognize_should_warn_if_given_rgb_image_and_single_channel_model(workspace, caplog):
@@ -110,8 +110,6 @@ def test_recognize_should_warn_if_given_rgb_image_and_single_channel_model(works
 
     interesting_log_messages = [t[2] for t in caplog.record_tuples if "Using raw image" in t[2]]
     assert len(interesting_log_messages) > 10  # For every line!
-    with open(page1, "r", encoding="utf-8") as f:
-        assert "verſchuldeten" in f.read()
 
 
 def test_word_segmentation(workspace):
