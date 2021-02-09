@@ -1,3 +1,4 @@
+export  # export variables to subshells
 PIP_INSTALL = pip3 install
 GIT_CLONE = git clone
 PYTHON = python3
@@ -10,10 +11,8 @@ help:
 	@echo "  Targets"
 	@echo ""
 	@echo "    install          Install ocrd_calamari"
-	@echo "    calamari         Clone calamari repo"
-	@echo "    calamari_models  Clone calamari_models repo"
-	@echo "    gt4histocr-calamari Get GT4HistOCR Calamari model (from SBB)"
-	@echo "    calamari/build   pip install calamari"
+	@echo "    gt4histocr-calamari1 Get GT4HistOCR Calamari model (from SBB)"
+	@echo "    actevedef_718448162 Download example data"
 	@echo "    deps-test        Install testing python deps via pip"
 	@echo "    repo/assets      Clone OCR-D/assets to ./repo/assets"
 	@echo "    test/assets      Setup test assets"
@@ -33,28 +32,20 @@ help:
 install:
 	$(PIP_INSTALL) .
 
-# Clone calamari repo
-calamari:
-	$(GIT_CLONE) https://github.com/chwick/calamari
 
-# Clone calamari_models repo
-calamari_models:
-	$(GIT_CLONE) -n https://github.com/chwick/calamari_models
-	# Checkout latest version that works with calamari-ocr==0.3.5:
-	cd calamari_models && git checkout f76b1d3ec
-
-gt4histocr-calamari:
-	mkdir gt4histocr-calamari
-	cd gt4histocr-calamari && \
-	wget https://file.spk-berlin.de:8443/calamari-models/GT4HistOCR/model.tar.xz && \
+# Get GT4HistOCR Calamari model (from SBB)
+gt4histocr-calamari1:
+	mkdir -p gt4histocr-calamari1
+	cd gt4histocr-calamari1 && \
+	wget https://qurator-data.de/calamari-models/GT4HistOCR/2019-12-11T11_10+0100/model.tar.xz && \
 	tar xfv model.tar.xz && \
 	rm model.tar.xz
 
+# Download example data
+actevedef_718448162:
+	wget https://qurator-data.de/examples/actevedef_718448162.zip && \
+	unzip actevedef_718448162.zip
 
-
-# pip install calamari
-calamari/build: calamari calamari_models
-	cd calamari && $(PIP_INSTALL) .
 
 
 #
@@ -82,12 +73,12 @@ assets-clean:
 	rm -rf test/assets
 
 # Run unit tests
-test: test/assets gt4histocr-calamari
+test: test/assets gt4histocr-calamari1
 	# declare -p HTTP_PROXY
 	$(PYTHON) -m pytest --continue-on-collection-errors test $(PYTEST_ARGS)
 
 # Run unit tests and determine test coverage
-coverage: test/assets calamari_models
+coverage: test/assets gt4histocr-calamari1
 	coverage erase
 	make test PYTHON="coverage run"
 	coverage report
