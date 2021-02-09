@@ -48,10 +48,10 @@ class CalamariRecognize(Processor):
         checkpoints = glob(self.parameter['checkpoint'])
         self.predictor = MultiPredictor(checkpoints=checkpoints)
 
-        self.input_channels = self.predictor.predictors[0].network.input_channels
-        #self.input_channels = self.predictor.predictors[0].network_params.channels # not used!
+        self.network_input_channels = self.predictor.predictors[0].network.input_channels
+        #self.network_input_channels = self.predictor.predictors[0].network_params.channels # not used!
         # binarization = self.predictor.predictors[0].model_params.data_preprocessor.binarization # not used!
-        # self.features = ('' if self.input_channels != 1 else
+        # self.features = ('' if self.network_input_channels != 1 else
         #                  'binarized' if binarization != 'GRAY' else
         #                  'grayscale_normalized')
         self.features = ''
@@ -91,7 +91,7 @@ class CalamariRecognize(Processor):
                     log.debug("Recognizing line '%s' in region '%s'", line.id, region.id)
 
                     line_image, line_coords = self.workspace.image_from_segment(line, region_image, region_coords, feature_selector=self.features)
-                    if ('binarized' not in line_coords['features'] and 'grayscale_normalized' not in line_coords['features'] and self.input_channels == 1):
+                    if ('binarized' not in line_coords['features'] and 'grayscale_normalized' not in line_coords['features'] and self.network_input_channels == 1):
                         # We cannot use a feature selector for this since we don't
                         # know whether the model expects (has been trained on)
                         # binarized or grayscale images; but raw images are likely
