@@ -39,9 +39,14 @@ class CalamariRecognize(Processor):
         kwargs['ocrd_tool'] = OCRD_TOOL['tools'][TOOL]
         kwargs['version'] = '%s (calamari %s, tensorflow %s)' % (OCRD_TOOL['version'], calamari_version, tensorflow_version)
         super(CalamariRecognize, self).__init__(*args, **kwargs)
+        if hasattr(self, 'output_file_grp'):
+            # processing context
+            self.setup()
 
-    def _init_calamari(self):
-
+    def setup(self):
+        """
+        Set up the model prior to processing.
+        """
         if not self.parameter.get('checkpoint', None) and self.parameter.get('checkpoint_dir', None):
             resolved = self.resolve_resource(self.parameter['checkpoint_dir'])
             self.parameter['checkpoint'] = '%s/*.ckpt.json' % resolved
@@ -68,8 +73,6 @@ class CalamariRecognize(Processor):
 
         assert_file_grp_cardinality(self.input_file_grp, 1)
         assert_file_grp_cardinality(self.output_file_grp, 1)
-
-        self._init_calamari()
 
         for (n, input_file) in enumerate(self.input_files):
             page_id = input_file.pageId or input_file.ID
