@@ -69,29 +69,9 @@ class CalamariRecognize(Processor):
         """
         Perform text recognition with Calamari on the workspace.
 
-        For each page of the input file group, open and deserialize input PAGE-XML
-        and its respective images. Then iterate over the element hierarchy down to
-        the line level.
-
-        For each textline, retrieve a segment image according to the layout annotation
-        (from an existing ``AlternativeImage``, or by cropping into the higher-level
-        images, and deskewing when applicable).
-
-        If the line element contained any previous text results or word segmentation,
-        delete it.
-
-        Convert the line image to a Numpy array and pass it to the recognizer. Aggregate
-        character results on the line level, stripping leading and trailing white space,
-        and selecting the best hypothesis for each position. Annotate the resulting
-        TextEquiv string and (average) confidence on the line segment.
-
-        If ``texequiv_level`` is ``word`` or ``glyph``, then additionally create word
-        level segments by splitting at white space characters, using the vertical
-        line coordinates and horizontal white space boundaries. In the case of ``glyph``,
-        create glyph level segments as well, adding all alternative character hypotheses
-        down to ``glyph_conf_cutoff`` confidence threshold.
-
-        Produce a new PAGE output file by serialising the resulting hierarchy.
+        If ``texequiv_level`` is ``word`` or ``glyph``, then additionally create word / glyph level segments by
+        splitting at white space characters / glyph boundaries. In the case of ``glyph``, add all alternative character
+        hypotheses down to ``glyph_conf_cutoff`` confidence threshold.
         """
         log = getLogger('processor.CalamariRecognize')
 
