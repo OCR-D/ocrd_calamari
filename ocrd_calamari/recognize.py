@@ -39,9 +39,14 @@ class CalamariRecognize(Processor):
         kwargs['ocrd_tool'] = OCRD_TOOL['tools'][TOOL]
         kwargs['version'] = '%s (calamari %s, tensorflow %s)' % (OCRD_TOOL['version'], calamari_version, tensorflow_version)
         super(CalamariRecognize, self).__init__(*args, **kwargs)
+        if hasattr(self, 'output_file_grp'):
+            # processing context
+            self.setup()
 
-    def _init_calamari(self):
-
+    def setup(self):
+        """
+        Set up the model prior to processing.
+        """
         if not self.parameter.get('checkpoint', None) and self.parameter.get('checkpoint_dir', None):
             resolved = self.resolve_resource(self.parameter['checkpoint_dir'])
             self.parameter['checkpoint'] = '%s/*.ckpt.json' % resolved
@@ -62,14 +67,36 @@ class CalamariRecognize(Processor):
 
     def process(self):
         """
-        Performs the recognition.
+        Perform text recognition with Calamari on the workspace.
+
+        For each page of the input file group, open and deserialize input PAGE-XML
+        and its respective images. Then iterate over the element hierarchy down to
+        the line level.
+
+        For each textline, retrieve a segment image according to the layout annotation
+        (from an existing ``AlternativeImage``, or by cropping into the higher-level
+        images, and deskewing when applicable).
+
+        If the line element contained any previous text results or word segmentation,
+        delete it.
+
+        Convert the line image to a Numpy array and pass it to the recognizer. Aggregate
+        character results on the line level, stripping leading and trailing white space,
+        and selecting the best hypothesis for each position. Annotate the resulting
+        TextEquiv string and (average) confidence on the line segment.
+
+        If ``texequiv_level`` is ``word`` or ``glyph``, then additionally create word
+        level segments by splitting at white space characters, using the vertical
+        line coordinates and horizontal white space boundaries. In the case of ``glyph``,
+        create glyph level segments as well, adding all alternative character hypotheses
+        down to ``glyph_conf_cutoff`` confidence threshold.
+
+        Produce a new PAGE output file by serialising the resulting hierarchy.
         """
         log = getLogger('processor.CalamariRecognize')
 
         assert_file_grp_cardinality(self.input_file_grp, 1)
         assert_file_grp_cardinality(self.output_file_grp, 1)
-
-        self._init_calamari()
 
         for (n, input_file) in enumerate(self.input_files):
             page_id = input_file.pageId or input_file.ID
