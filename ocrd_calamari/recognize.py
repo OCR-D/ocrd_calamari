@@ -47,10 +47,8 @@ class CalamariRecognize(Processor):
         """
         Set up the model prior to processing.
         """
-        if not self.parameter.get('checkpoint', None) and self.parameter.get('checkpoint_dir', None):
-            resolved = self.resolve_resource(self.parameter['checkpoint_dir'])
-            self.parameter['checkpoint'] = '%s/*.ckpt.json' % resolved
-        checkpoints = glob(self.parameter['checkpoint'])
+        resolved = self.resolve_resource(self.parameter['checkpoint_dir'])
+        checkpoints = glob('%s/*.ckpt.json' % resolved)
         self.predictor = MultiPredictor(checkpoints=checkpoints)
 
         self.network_input_channels = self.predictor.predictors[0].network.input_channels
