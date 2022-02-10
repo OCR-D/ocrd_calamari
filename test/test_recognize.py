@@ -15,7 +15,6 @@ from .base import assets
 METS_KANT = assets.url_of('kant_aufklaerung_1784-page-region-line-word_glyph/data/mets.xml')
 WORKSPACE_DIR = '/tmp/test-ocrd-calamari'
 CHECKPOINT_DIR = os.path.join(os.getcwd(), 'gt4histocr-calamari1')
-CHECKPOINT = os.path.join(CHECKPOINT_DIR, '*.ckpt.json')
 
 # Because XML namespace versions are so much fun, we not only use one, we use TWO!
 NSMAP = { "pc": "http://schema.primaresearch.org/PAGE/gts/pagecontent/2019-07-15" }
@@ -72,22 +71,6 @@ def test_recognize(workspace):
         input_file_grp="OCR-D-GT-SEG-LINE",
         output_file_grp="OCR-D-OCR-CALAMARI",
         parameter={
-            "checkpoint": CHECKPOINT,
-        }
-    ).process()
-    workspace.save_mets()
-
-    page1 = os.path.join(workspace.directory, "OCR-D-OCR-CALAMARI/OCR-D-OCR-CALAMARI_0001.xml")
-    assert os.path.exists(page1)
-    with open(page1, "r", encoding="utf-8") as f:
-        assert "verſchuldeten" in f.read()
-
-def test_recognize_with_checkpoint_dir(workspace):
-    CalamariRecognize(
-        workspace,
-        input_file_grp="OCR-D-GT-SEG-LINE",
-        output_file_grp="OCR-D-OCR-CALAMARI",
-        parameter={
             "checkpoint_dir": CHECKPOINT_DIR,
         }
     ).process()
@@ -105,7 +88,7 @@ def test_recognize_should_warn_if_given_rgb_image_and_single_channel_model(works
         workspace,
         input_file_grp="OCR-D-GT-SEG-LINE",
         output_file_grp="OCR-D-OCR-CALAMARI-BROKEN",
-        parameter={'checkpoint': CHECKPOINT}
+        parameter={'checkpoint_dir': CHECKPOINT_DIR}
     ).process()
 
     interesting_log_messages = [t[2] for t in caplog.record_tuples if "Using raw image" in t[2]]
@@ -118,7 +101,7 @@ def test_word_segmentation(workspace):
         input_file_grp="OCR-D-GT-SEG-LINE",
         output_file_grp="OCR-D-OCR-CALAMARI",
         parameter={
-            "checkpoint": CHECKPOINT,
+            "checkpoint_dir": CHECKPOINT_DIR,
             "textequiv_level": "word",   # Note that we're going down to word level here
         }
     ).process()
@@ -150,7 +133,7 @@ def test_glyphs(workspace):
         input_file_grp="OCR-D-GT-SEG-LINE",
         output_file_grp="OCR-D-OCR-CALAMARI",
         parameter={
-            "checkpoint": CHECKPOINT,
+            "checkpoint_dir": CHECKPOINT_DIR,
             "textequiv_level": "glyph",   # Note that we're going down to glyph level here
         }
     ).process()
