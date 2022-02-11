@@ -14,7 +14,7 @@ from .base import assets
 
 METS_KANT = assets.url_of('kant_aufklaerung_1784-page-region-line-word_glyph/data/mets.xml')
 WORKSPACE_DIR = '/tmp/test-ocrd-calamari'
-CHECKPOINT_DIR = os.path.join(os.getcwd(), 'gt4histocr-calamari1')
+CHECKPOINT_DIR = os.getenv('MODEL')
 
 # Because XML namespace versions are so much fun, we not only use one, we use TWO!
 NSMAP = { "pc": "http://schema.primaresearch.org/PAGE/gts/pagecontent/2019-07-15" }
