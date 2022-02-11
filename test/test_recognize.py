@@ -30,14 +30,6 @@ def workspace():
     resolver = Resolver()
     workspace = resolver.workspace_from_url(METS_KANT, dst_dir=WORKSPACE_DIR)
 
-    # XXX Work around data bug(?):
-    #     PAGE-XML links to OCR-D-IMG/INPUT_0017.tif, but this is nothing core can download
-    os.makedirs(os.path.join(WORKSPACE_DIR, 'OCR-D-IMG'))
-    for f in ['INPUT_0017.tif', 'INPUT_0020.tif']:
-        urllib.request.urlretrieve(
-            "https://github.com/OCR-D/assets/raw/master/data/kant_aufklaerung_1784/data/OCR-D-IMG/" + f,
-            os.path.join(WORKSPACE_DIR, 'OCR-D-IMG', f))
-
     # The binarization options I have are:
     #
     # a. ocrd_kraken which tries to install cltsm, whose installation is borken on my machine (protobuf)
@@ -46,9 +38,10 @@ def workspace():
     # c. just fumble with the original files
     #
     # So I'm going for option c.
-    for f in ['INPUT_0017.tif', 'INPUT_0020.tif']:
-        ff = os.path.join(WORKSPACE_DIR, 'OCR-D-IMG', f)
-        subprocess.call(['convert', ff, '-threshold', '50%', ff])
+    for imgf in workspace.mets.find_files(fileGrp="OCR-D-IMG"):
+        imgf = workspace.download_file(imgf)
+        path = os.path.join(workspace.directory, imgf.local_filename)
+        subprocess.call(['mogrify', '-threshold', '50%', path])
 
     # Remove GT Words and TextEquivs, to not accidently check GT text instead of the OCR text
     # XXX Review data again
