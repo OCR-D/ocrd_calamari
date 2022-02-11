@@ -242,18 +242,7 @@ class CalamariRecognize(Processor):
 
 
             # Add metadata about this operation and its runtime parameters:
-            metadata = pcgts.get_Metadata()  # ensured by from_file()
-            metadata.add_MetadataItem(
-                MetadataItemType(type_="processingStep",
-                                 name=self.ocrd_tool['steps'][0],
-                                 value=TOOL,
-                                 Labels=[LabelsType(
-                                     externalModel="ocrd-tool",
-                                     externalId="parameters",
-                                     Label=[LabelType(type_=name, value=self.parameter[name])
-                                            for name in self.parameter.keys()])]))
-
-
+            self.add_metadata(pcgts)
             file_id = make_file_id(input_file, self.output_file_grp)
             pcgts.set_pcGtsId(file_id)
             self.workspace.add_file(
