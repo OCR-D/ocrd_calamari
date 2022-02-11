@@ -54,7 +54,7 @@ actevedef_718448162:
 
 # Install testing python deps via pip
 deps-test:
-	$(PIP) install -r requirements_test.txt
+	$(PIP_INSTALL) -r requirements-test.txt
 
 
 # Clone OCR-D/assets to ./repo/assets
