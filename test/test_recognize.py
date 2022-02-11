@@ -46,14 +46,14 @@ def workspace():
     # Remove GT Words and TextEquivs, to not accidently check GT text instead of the OCR text
     # XXX Review data again
     # XXX Make this more robust against namespace version changes
-    for of in workspace.mets.find_files(fileGrp="OCR-D-GT-SEG-LINE"):
+    for of in workspace.mets.find_files(fileGrp="OCR-D-GT-SEG-WORD-GLYPH"):
         workspace.download_file(of)
-    for to_remove in ["//pc:Word", "//pc:TextEquiv"]:
-        for ff in glob(os.path.join(WORKSPACE_DIR, "OCR-D-GT-SEG-LINE", "*")):
-            tree = etree.parse(ff)
+        path = os.path.join(workspace.directory, of.local_filename)
+        tree = etree.parse(path)
+        for to_remove in ["//pc:Word", "//pc:TextEquiv"]:
             for e in tree.xpath(to_remove, namespaces=NSMAP_GT):
                 e.getparent().remove(e)
-            tree.write(ff, xml_declaration=True, encoding="utf-8")
+        tree.write(path, xml_declaration=True, encoding="utf-8")
 
     return workspace
 
@@ -61,7 +61,7 @@ def workspace():
 def test_recognize(workspace):
     CalamariRecognize(
         workspace,
-        input_file_grp="OCR-D-GT-SEG-LINE",
+        input_file_grp="OCR-D-GT-SEG-WORD-GLYPH",
         output_file_grp="OCR-D-OCR-CALAMARI",
         parameter={
             "checkpoint_dir": CHECKPOINT_DIR,
@@ -79,7 +79,7 @@ def test_recognize_should_warn_if_given_rgb_image_and_single_channel_model(works
     caplog.set_level(logging.WARNING)
     CalamariRecognize(
         workspace,
-        input_file_grp="OCR-D-GT-SEG-LINE",
+        input_file_grp="OCR-D-GT-SEG-WORD-GLYPH",
         output_file_grp="OCR-D-OCR-CALAMARI-BROKEN",
         parameter={'checkpoint_dir': CHECKPOINT_DIR}
     ).process()
@@ -91,7 +91,7 @@ def test_recognize_should_warn_if_given_rgb_image_and_single_channel_model(works
 def test_word_segmentation(workspace):
     CalamariRecognize(
         workspace,
-        input_file_grp="OCR-D-GT-SEG-LINE",
+        input_file_grp="OCR-D-GT-SEG-WORD-GLYPH",
         output_file_grp="OCR-D-OCR-CALAMARI",
         parameter={
             "checkpoint_dir": CHECKPOINT_DIR,
@@ -123,7 +123,7 @@ def test_word_segmentation(workspace):
 def test_glyphs(workspace):
     CalamariRecognize(
         workspace,
-        input_file_grp="OCR-D-GT-SEG-LINE",
+        input_file_grp="OCR-D-GT-SEG-WORD-GLYPH",
         output_file_grp="OCR-D-OCR-CALAMARI",
         parameter={
             "checkpoint_dir": CHECKPOINT_DIR,
