@@ -3,6 +3,7 @@ PIP_INSTALL = pip3 install
 GIT_CLONE = git clone
 PYTHON = python3
 PYTEST_ARGS = -W 'ignore::DeprecationWarning' -W 'ignore::FutureWarning'
+MODEL = qurator-gt4histocr-1.0
 
 # BEGIN-EVAL makefile-parser --make-help Makefile
 
@@ -11,7 +12,7 @@ help:
 	@echo "  Targets"
 	@echo ""
 	@echo "    install          Install ocrd_calamari"
-	@echo "    gt4histocr-calamari1 Get GT4HistOCR Calamari model (from SBB)"
+	@echo "    $(MODEL)         Get Calamari model (from SBB)"
 	@echo "    actevedef_718448162 Download example data"
 	@echo "    deps-test        Install testing python deps via pip"
 	@echo "    repo/assets      Clone OCR-D/assets to ./repo/assets"
@@ -25,6 +26,7 @@ help:
 	@echo "    PYTHON       '$(PYTHON)'"
 	@echo "    PIP_INSTALL  '$(PIP_INSTALL)'"
 	@echo "    GIT_CLONE    '$(GIT_CLONE)'"
+	@echo "    MODEL        '$(MODEL)'"
 
 # END-EVAL
 
@@ -34,17 +36,14 @@ install:
 
 
 # Get GT4HistOCR Calamari model (from SBB)
-gt4histocr-calamari1:
-	mkdir -p gt4histocr-calamari1
-	cd gt4histocr-calamari1 && \
-	wget https://qurator-data.de/calamari-models/GT4HistOCR/2019-12-11T11_10+0100/model.tar.xz && \
-	tar xfv model.tar.xz && \
-	rm model.tar.xz
+$(MODEL):
+	ocrd resmgr download ocrd-calamari-recognize $@
 
-# Download example data
+# Download example data (not used currently)
 actevedef_718448162:
-	wget https://qurator-data.de/examples/actevedef_718448162.zip && \
-	unzip actevedef_718448162.zip
+	wget https://qurator-data.de/examples/actevedef_718448162.zip \
+	&& unzip actevedef_718448162.zip \
+	&& rm actevedef_718448162.zip
 
 
 
@@ -54,7 +53,7 @@ actevedef_718448162:
 
 # Install testing python deps via pip
 deps-test:
-	$(PIP) install -r requirements_test.txt
+	$(PIP_INSTALL) -r requirements-test.txt
 
 
 # Clone OCR-D/assets to ./repo/assets
@@ -73,15 +72,15 @@ assets-clean:
 	rm -rf test/assets
 
 # Run unit tests
-test: test/assets gt4histocr-calamari1
+test: test/assets $(MODEL)
 	# declare -p HTTP_PROXY
 	$(PYTHON) -m pytest --continue-on-collection-errors test $(PYTEST_ARGS)
 
 # Run unit tests and determine test coverage
-coverage: test/assets gt4histocr-calamari1
+coverage: test/assets $(MODEL)
 	coverage erase
 	make test PYTHON="coverage run"
 	coverage report
 	coverage html
 
-.PHONY: assets-clean test
+.PHONY: install assets-clean deps-test test coverage $(MODEL)

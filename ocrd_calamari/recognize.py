@@ -47,10 +47,8 @@ class CalamariRecognize(Processor):
         """
         Set up the model prior to processing.
         """
-        if not self.parameter.get('checkpoint', None) and self.parameter.get('checkpoint_dir', None):
-            resolved = self.resolve_resource(self.parameter['checkpoint_dir'])
-            self.parameter['checkpoint'] = '%s/*.ckpt.json' % resolved
-        checkpoints = glob(self.parameter['checkpoint'])
+        resolved = self.resolve_resource(self.parameter['checkpoint_dir'])
+        checkpoints = glob('%s/*.ckpt.json' % resolved)
         self.predictor = MultiPredictor(checkpoints=checkpoints)
 
         self.network_input_channels = self.predictor.predictors[0].network.input_channels
@@ -244,18 +242,7 @@ class CalamariRecognize(Processor):
 
 
             # Add metadata about this operation and its runtime parameters:
-            metadata = pcgts.get_Metadata()  # ensured by from_file()
-            metadata.add_MetadataItem(
-                MetadataItemType(type_="processingStep",
-                                 name=self.ocrd_tool['steps'][0],
-                                 value=TOOL,
-                                 Labels=[LabelsType(
-                                     externalModel="ocrd-tool",
-                                     externalId="parameters",
-                                     Label=[LabelType(type_=name, value=self.parameter[name])
-                                            for name in self.parameter.keys()])]))
-
-
+            self.add_metadata(pcgts)
             file_id = make_file_id(input_file, self.output_file_grp)
             pcgts.set_pcGtsId(file_id)
             self.workspace.add_file(

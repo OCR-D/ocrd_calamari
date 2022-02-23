@@ -14,8 +14,7 @@ jobs:
       - run: locale-gen "en_US.UTF-8"; update-locale LC_ALL="en_US.UTF-8"
       - checkout
       - run: pip3 install --upgrade pip
-      - run: make install PIP_INSTALL="pip3 install"
-      - run: pip3 install -r requirements-test.txt
+      - run: make install deps-test PIP_INSTALL="pip3 install"
       - run: make coverage LC_ALL=en_US.utf8
       - codecov/upload
 
