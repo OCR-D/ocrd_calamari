@@ -13,7 +13,7 @@ Releasing
 * Update `ocrd-tool.json` version (the `setup.py` version is read from this)
 * `git commit -m 'v<version>'`
 * `git tag -m 'v<version>' 'v<version>'`
-* `git push --tags`
+* `git push; git push --tags`
 * Do a release on GitHub
 
 ### Uploading to PyPI
