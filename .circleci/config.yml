@@ -3,10 +3,12 @@ orbs:
   codecov: codecov/codecov@1.0.5
 
 jobs:
-
-  test-python36:
+  test:
+    parameters:
+      python-image:
+        type: string
     docker:
-      - image: python:3.6.12
+      - image: << parameters.python-image >>
     environment:
       - LC_ALL=C.UTF-8
       - PYTHONIOENCODING: utf-8
@@ -20,8 +22,11 @@ jobs:
 workflows:
   build:
     jobs:
-      - test-python36:
+      - test:
           filters:
             branches:
               ignore:
                 - screenshots
+          matrix:
+            parameters:
+              python-image: ["python:3.6", "python:3.7", "python:3.8", "python:3.9", "python:3.10"]
