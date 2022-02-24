@@ -55,6 +55,9 @@ actevedef_718448162:
 deps-test:
 	$(PIP_INSTALL) -r requirements-test.txt
 
+deps-test-ubuntu: deps-test
+	apt-get install -y make git curl wget imagemagick
+
 
 # Clone OCR-D/assets to ./repo/assets
 repo/assets:

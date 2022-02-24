@@ -11,10 +11,9 @@ jobs:
       - LC_ALL=C.UTF-8
       - PYTHONIOENCODING: utf-8
     steps:
-      - run: apt-get update; apt-get install -y make git curl wget imagemagick
       - checkout
       - run: pip3 install --upgrade pip
-      - run: make install deps-test PIP_INSTALL="pip3 install"
+      - run: make install deps-test-ubuntu PIP_INSTALL="pip3 install"
       - run: make coverage
       - codecov/upload
 
