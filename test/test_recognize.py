@@ -28,7 +28,12 @@ def workspace():
     os.makedirs(WORKSPACE_DIR)
 
     resolver = Resolver()
-    workspace = resolver.workspace_from_url(METS_KANT, dst_dir=WORKSPACE_DIR)
+    # due to core#809 this does not always work:
+    #workspace = resolver.workspace_from_url(METS_KANT, dst_dir=WORKSPACE_DIR)
+    # workaround:
+    shutil.rmtree(WORKSPACE_DIR)
+    shutil.copytree(os.path.dirname(METS_KANT), WORKSPACE_DIR)
+    workspace = resolver.workspace_from_url(os.path.join(WORKSPACE_DIR, 'mets.xml'))
 
     # The binarization options I have are:
     #
