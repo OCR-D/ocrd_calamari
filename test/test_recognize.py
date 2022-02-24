@@ -16,9 +16,28 @@ METS_KANT = assets.url_of('kant_aufklaerung_1784-page-region-line-word_glyph/dat
 WORKSPACE_DIR = '/tmp/test-ocrd-calamari'
 CHECKPOINT_DIR = os.getenv('MODEL')
 
-# Because XML namespace versions are so much fun, we not only use one, we use TWO!
-NSMAP = { "pc": "http://schema.primaresearch.org/PAGE/gts/pagecontent/2019-07-15" }
-NSMAP_GT = { "pc": "http://schema.primaresearch.org/PAGE/gts/pagecontent/2013-07-15" }
+
+def page_namespace(tree):
+    """Return the PAGE content namespace used in the given ElementTree.
+
+    This relies on the assumption that, in any given PAGE content file, the root element has the local name "PcGts". We
+    do not check if the files uses any valid PAGE namespace.
+    """
+    root_name = etree.QName(tree.getroot().tag)
+    if root_name.localname == "PcGts":
+        return root_name.namespace
+    else:
+        raise ValueError("Not a PAGE tree")
+
+def assertFileContains(fn, text):
+    """Assert that the given file contains a given string."""
+    with open(fn, "r", encoding="utf-8") as f:
+        assert text in f.read()
+
+def assertFileDoesNotContain(fn, text):
+    """Assert that the given file does not contain given string."""
+    with open(fn, "r", encoding="utf-8") as f:
+        assert not text in f.read()
 
 
 @pytest.fixture
@@ -50,15 +69,16 @@ def workspace():
 
     # Remove GT Words and TextEquivs, to not accidently check GT text instead of the OCR text
     # XXX Review data again
-    # XXX Make this more robust against namespace version changes
     for of in workspace.mets.find_files(fileGrp="OCR-D-GT-SEG-WORD-GLYPH"):
         workspace.download_file(of)
         path = os.path.join(workspace.directory, of.local_filename)
         tree = etree.parse(path)
+        nsmap_gt = { "pc": page_namespace(tree) }
         for to_remove in ["//pc:Word", "//pc:TextEquiv"]:
-            for e in tree.xpath(to_remove, namespaces=NSMAP_GT):
+            for e in tree.xpath(to_remove, namespaces=nsmap_gt):
                 e.getparent().remove(e)
         tree.write(path, xml_declaration=True, encoding="utf-8")
+        assertFileDoesNotContain(path, "TextEquiv")
 
     return workspace
 
@@ -76,8 +96,7 @@ def test_recognize(workspace):
 
     page1 = os.path.join(workspace.directory, "OCR-D-OCR-CALAMARI/OCR-D-OCR-CALAMARI_0001.xml")
     assert os.path.exists(page1)
-    with open(page1, "r", encoding="utf-8") as f:
-        assert "verſchuldeten" in f.read()
+    assertFileContains(page1, "verſchuldeten")
 
 
 def test_recognize_should_warn_if_given_rgb_image_and_single_channel_model(workspace, caplog):
@@ -108,20 +127,21 @@ def test_word_segmentation(workspace):
     page1 = os.path.join(workspace.directory, "OCR-D-OCR-CALAMARI/OCR-D-OCR-CALAMARI_0001.xml")
     assert os.path.exists(page1)
     tree = etree.parse(page1)
+    nsmap = { "pc": page_namespace(tree) }
 
     # The result should contain a TextLine that contains the text "December"
-    line = tree.xpath(".//pc:TextLine[pc:TextEquiv/pc:Unicode[contains(text(),'December')]]", namespaces=NSMAP)[0]
+    line = tree.xpath(".//pc:TextLine[pc:TextEquiv/pc:Unicode[contains(text(),'December')]]", namespaces=nsmap)[0]
     assert line is not None
 
     # The textline should a. contain multiple words and b. these should concatenate fine to produce the same line text
-    words = line.xpath(".//pc:Word", namespaces=NSMAP)
+    words = line.xpath(".//pc:Word", namespaces=nsmap)
     assert len(words) >= 2
-    words_text = " ".join(word.xpath("pc:TextEquiv/pc:Unicode", namespaces=NSMAP)[0].text for word in words)
-    line_text = line.xpath("pc:TextEquiv/pc:Unicode", namespaces=NSMAP)[0].text
+    words_text = " ".join(word.xpath("pc:TextEquiv/pc:Unicode", namespaces=nsmap)[0].text for word in words)
+    line_text = line.xpath("pc:TextEquiv/pc:Unicode", namespaces=nsmap)[0].text
     assert words_text == line_text
 
     # For extra measure, check that we're not seeing any glyphs, as we asked for textequiv_level == "word"
-    glyphs = tree.xpath("//pc:Glyph", namespaces=NSMAP)
+    glyphs = tree.xpath("//pc:Glyph", namespaces=nsmap)
     assert len(glyphs) == 0
 
 
@@ -140,9 +160,10 @@ def test_glyphs(workspace):
     page1 = os.path.join(workspace.directory, "OCR-D-OCR-CALAMARI/OCR-D-OCR-CALAMARI_0001.xml")
     assert os.path.exists(page1)
     tree = etree.parse(page1)
+    nsmap = { "pc": page_namespace(tree) }
 
     # The result should contain a lot of glyphs
-    glyphs = tree.xpath("//pc:Glyph", namespaces=NSMAP)
+    glyphs = tree.xpath("//pc:Glyph", namespaces=nsmap)
     assert len(glyphs) >= 100
 
 
