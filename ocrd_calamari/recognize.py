@@ -85,7 +85,7 @@ class CalamariRecognize(Processor):
             page_image, page_coords, page_image_info = self.workspace.image_from_page(
                 page, page_id, feature_selector=self.features)
 
-            for region in page.get_TextRegion():
+            for region in page.get_AllRegions(classes=['Text']):
                 region_image, region_coords = self.workspace.image_from_segment(
                     region, page_image, page_coords, feature_selector=self.features)
 
