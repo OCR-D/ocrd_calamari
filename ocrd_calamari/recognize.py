@@ -97,15 +97,23 @@ class CalamariRecognize(Processor):
                     log.debug("Recognizing line '%s' in region '%s'", line.id, region.id)
 
                     line_image, line_coords = self.workspace.image_from_segment(line, region_image, region_coords, feature_selector=self.features)
-                    if ('binarized' not in line_coords['features'] and 'grayscale_normalized' not in line_coords['features'] and self.network_input_channels == 1):
+                    if ('binarized' not in line_coords['features'] and
+                        'grayscale_normalized' not in line_coords['features'] and
+                        self.network_input_channels == 1):
                         # We cannot use a feature selector for this since we don't
                         # know whether the model expects (has been trained on)
                         # binarized or grayscale images; but raw images are likely
                         # always inadequate:
                         log.warning("Using raw image for line '%s' in region '%s'", line.id, region.id)
 
-                    line_image = line_image if all(line_image.size) else [[0]]
-                    line_image_np = np.array(line_image, dtype=np.uint8)
+                    if (not all(line_image.size) or
+                        line_image.height <= 8 or line_image.width <= 8 or
+                        'binarized' in line_coords['features'] and line_image.convert('1').getextrema()[0] == 255):
+                        # empty size or too tiny or no foreground at all: skip
+                        log.warning("Skipping empty line '%s' in region '%s'", line.id, region.id)
+                        line_image_np = np.array([[0]], dtype=np.uint8)
+                    else:
+                        line_image_np = np.array(line_image, dtype=np.uint8)
                     line_images_np.append(line_image_np)
                     line_coordss.append(line_coords)
                 raw_results_all = self.predictor.predict_raw(line_images_np, progress_bar=False)
