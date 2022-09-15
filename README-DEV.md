@@ -11,9 +11,10 @@ make test
 Releasing
 ---------
 * Update `ocrd-tool.json` version (the `setup.py` version is read from this)
-* `git commit -m 'v<version>'`
+* `git add` the `ocrd-tool.json` file and `git commit -m 'v<version>'`
 * `git tag -m 'v<version>' 'v<version>'`
 * `git push; git push --tags`
+* Wait and check if tests on CircleCI are OK
 * Do a release on GitHub
 
 ### Uploading to PyPI
