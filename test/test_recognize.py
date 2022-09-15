@@ -1,6 +1,7 @@
 import os
 import shutil
 import subprocess
+import tempfile
 import urllib.request
 from lxml import etree
 from glob import glob
@@ -13,7 +14,7 @@ from ocrd_calamari import CalamariRecognize
 from .base import assets
 
 METS_KANT = assets.url_of('kant_aufklaerung_1784-page-region-line-word_glyph/data/mets.xml')
-WORKSPACE_DIR = '/tmp/test-ocrd-calamari'
+WORKSPACE_DIR = tempfile.mkdtemp(prefix='test-ocrd-calamari-')
 CHECKPOINT_DIR = os.getenv('MODEL')
 
 
@@ -80,7 +81,9 @@ def workspace():
         tree.write(path, xml_declaration=True, encoding="utf-8")
         assertFileDoesNotContain(path, "TextEquiv")
 
-    return workspace
+    yield workspace
+
+    shutil.rmtree(WORKSPACE_DIR)
 
 
 def test_recognize(workspace):
