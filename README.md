@@ -66,12 +66,6 @@ ocrd-tesserocr-segment-line -I OCR-D-SEG-REGION -O OCR-D-SEG-LINE
 
 Finally recognize the text using ocrd_calamari and the downloaded model:
 ```
-ocrd-calamari-recognize -P checkpoint "../gt4histocr-calamari1/*.ckpt.json" -I OCR-D-SEG-LINE -O OCR-D-OCR-CALAMARI
-```
-
-or
-
-```
 ocrd-calamari-recognize -P checkpoint_dir "../gt4histocr-calamari1" -I OCR-D-SEG-LINE -O OCR-D-OCR-CALAMARI
 ```
 
