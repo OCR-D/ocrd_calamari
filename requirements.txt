@@ -1,5 +1,5 @@
 tensorflow >= 2.5.0
-numpy =~ 1.23.5  # XXX https://github.com/OCR-D/ocrd_calamari/issues/87
+numpy ~= 1.23.5  # XXX https://github.com/OCR-D/ocrd_calamari/issues/87
 calamari-ocr == 1.0.*
 setuptools >= 41.0.0  # tensorboard depends on this, but why do we get an error at runtime?
 click
