@@ -97,7 +97,7 @@ def test_recognize(workspace):
     ).process()
     workspace.save_mets()
 
-    page1 = os.path.join(workspace.directory, "OCR-D-OCR-CALAMARI/OCR-D-OCR-CALAMARI_0001.xml")
+    page1 = os.path.join(workspace.directory, "OCR-D-OCR-CALAMARI/OCR-D-OCR-CALAMARI_phys_0001.xml")
     assert os.path.exists(page1)
     assertFileContains(page1, "verſchuldeten")
 
@@ -127,7 +127,7 @@ def test_word_segmentation(workspace):
     ).process()
     workspace.save_mets()
 
-    page1 = os.path.join(workspace.directory, "OCR-D-OCR-CALAMARI/OCR-D-OCR-CALAMARI_0001.xml")
+    page1 = os.path.join(workspace.directory, "OCR-D-OCR-CALAMARI/OCR-D-OCR-CALAMARI_phys_0001.xml")
     assert os.path.exists(page1)
     tree = etree.parse(page1)
     nsmap = { "pc": page_namespace(tree) }
@@ -160,7 +160,7 @@ def test_glyphs(workspace):
     ).process()
     workspace.save_mets()
 
-    page1 = os.path.join(workspace.directory, "OCR-D-OCR-CALAMARI/OCR-D-OCR-CALAMARI_0001.xml")
+    page1 = os.path.join(workspace.directory, "OCR-D-OCR-CALAMARI/OCR-D-OCR-CALAMARI_phys_0001.xml")
     assert os.path.exists(page1)
     tree = etree.parse(page1)
     nsmap = { "pc": page_namespace(tree) }
