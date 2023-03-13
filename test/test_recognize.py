@@ -16,6 +16,7 @@ from .base import assets
 METS_KANT = assets.url_of('kant_aufklaerung_1784-page-region-line-word_glyph/data/mets.xml')
 WORKSPACE_DIR = tempfile.mkdtemp(prefix='test-ocrd-calamari-')
 CHECKPOINT_DIR = os.getenv('MODEL')
+DEBUG = os.getenv('DEBUG', False)
 
 
 def page_namespace(tree):
@@ -83,7 +84,8 @@ def workspace():
 
     yield workspace
 
-    shutil.rmtree(WORKSPACE_DIR)
+    if not DEBUG:
+        shutil.rmtree(WORKSPACE_DIR)
 
 
 def test_recognize(workspace):
