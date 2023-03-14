@@ -16,7 +16,6 @@ jobs:
       - checkout
       - run: pip3 install --upgrade pip
       - run: if python3 --version | grep -q "Python 3.6"; then pip install --prefer-binary -U opencv-python-headless numpy; fi  # to avoid compilation
-      - run: if python3 --version | grep -q "Python 3.11"; then pip install --prefer-binary -U tensorflow; fi  # manual install seems to allow installing the RC (but not through requirements.txt)
       - run: make install deps-test-ubuntu PIP_INSTALL="pip3 install"
       - run: make coverage
       - codecov/upload
@@ -31,4 +30,4 @@ workflows:
                 - screenshots
           matrix:
             parameters:
-              python-image: ["python:3.6", "python:3.7", "python:3.8", "python:3.9", "python:3.10", "python:3.11"]
+              python-image: ["python:3.6", "python:3.7", "python:3.8", "python:3.9", "python:3.10"]
