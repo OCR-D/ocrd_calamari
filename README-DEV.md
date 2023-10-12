@@ -2,11 +2,11 @@ Testing
 -------
 In a Python 3 virtualenv:
 
-~~~
+```
 pip install -e .
 pip install -r requirements-test.txt
 make test
-~~~
+```
 
 Releasing
 ---------
