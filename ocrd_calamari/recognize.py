@@ -5,6 +5,21 @@ import itertools
 from glob import glob
 
 import numpy as np
+from ocrd_utils import (
+    assert_file_grp_cardinality,
+    concat_padded,
+    coordinates_for_segment,
+    getLogger,
+    make_file_id,
+    points_from_polygon,
+    polygon_from_x0y0x1y1,
+    MIMETYPE_PAGE,
+    tf_disable_interactive_logs,
+)
+
+# Disable tensorflow/keras logging via print before importing calamari
+tf_disable_interactive_logs()
+
 from calamari_ocr import __version__ as calamari_version
 from calamari_ocr.ocr import MultiPredictor
 from calamari_ocr.ocr.voting import voter_from_proto
@@ -18,16 +33,9 @@ from ocrd_models.ocrd_page import (
         WordType, GlyphType, CoordsType,
         to_xml
 )
-from ocrd_utils import (
-        getLogger, concat_padded,
-        coordinates_for_segment, points_from_polygon, polygon_from_x0y0x1y1,
-        make_file_id, assert_file_grp_cardinality,
-        MIMETYPE_PAGE
-)
 
-from ocrd_calamari.config import OCRD_TOOL, TF_CPP_MIN_LOG_LEVEL
+from ocrd_calamari.config import OCRD_TOOL
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = TF_CPP_MIN_LOG_LEVEL
 from tensorflow import __version__ as tensorflow_version
 
 TOOL = 'ocrd-calamari-recognize'
