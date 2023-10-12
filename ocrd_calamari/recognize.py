@@ -34,9 +34,8 @@ from ocrd_models.ocrd_page import (
         to_xml
 )
 
-from ocrd_calamari.config import OCRD_TOOL, TF_CPP_MIN_LOG_LEVEL
+from ocrd_calamari.config import OCRD_TOOL
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = TF_CPP_MIN_LOG_LEVEL
 from tensorflow import __version__ as tensorflow_version
 
 TOOL = 'ocrd-calamari-recognize'
