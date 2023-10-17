@@ -18,4 +18,3 @@ RUN pip3 install --upgrade pip && \
     pip3 check
 
 ENTRYPOINT ["/usr/local/bin/ocrd-calamari-recognize"]
-

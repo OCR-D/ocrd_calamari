@@ -1,5 +1,3 @@
-__all__ = [
-    'CalamariRecognize'
-]
+__all__ = ["CalamariRecognize"]
 
 from .recognize import CalamariRecognize

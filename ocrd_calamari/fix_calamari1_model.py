@@ -6,8 +6,9 @@ from copy import deepcopy
 
 from ocrd_calamari.util import working_directory
 
+
 @click.command
-@click.argument('checkpoint_dir')
+@click.argument("checkpoint_dir")
 def fix_calamari1_model(checkpoint_dir):
     """
     Fix old Calamari 1 models.

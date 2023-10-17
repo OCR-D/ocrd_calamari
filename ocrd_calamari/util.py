@@ -1,5 +1,6 @@
 import os
 
+
 class working_directory:
     """Context manager to temporarily change the working directory"""
 
