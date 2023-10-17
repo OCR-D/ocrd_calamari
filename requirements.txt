@@ -3,4 +3,4 @@ numpy
 calamari-ocr == 1.0.*, >= 1.0.6
 setuptools >= 41.0.0  # tensorboard depends on this, but why do we get an error at runtime?
 click
-ocrd >= 2.22.0
+ocrd >= 2.54.0
