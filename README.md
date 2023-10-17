@@ -43,32 +43,29 @@ pip install .
 Download models trained on GT4HistOCR data:
 
 ```
-make gt4histocr-calamari1
-ls gt4histocr-calamari1
+make qurator-gt4histocr-1.0
+ls .local/share/ocrd-resources/ocrd-calamari-recognize/*
 ```
 
 Manual download: [model.tar.xz](https://qurator-data.de/calamari-models/GT4HistOCR/2019-12-11T11_10+0100/model.tar.xz)
 
 ## Example Usage
-Before using `ocrd-calamari-recognize` get some example data and model, and
-prepare the document for OCR:
+Before using `ocrd-calamari-recognize` get some example data and model:
+
 ```
 # Download model and example data
-make gt4histocr-calamari1
-make actevedef_718448162
-
-# Create binarized images and line segmentation using other OCR-D projects
-cd actevedef_718448162
-ocrd-olena-binarize -P impl sauvola-ms-split -I OCR-D-IMG -O OCR-D-IMG-BIN
-ocrd-tesserocr-segment-region -I OCR-D-IMG-BIN -O OCR-D-SEG-REGION
-ocrd-tesserocr-segment-line -I OCR-D-SEG-REGION -O OCR-D-SEG-LINE
+make qurator-gt4histocr-1.0
+make example
 ```
 
-Finally recognize the text using ocrd_calamari and the downloaded model:
+The example already contains a binarized and line-segmented page, so we are ready to go. Recognize
+the text using ocrd_calamari and the downloaded model:
+
 ```
+cd actevedef_718448162.first-page+binarization+segmentation
 ocrd-calamari-recognize \
-  -P checkpoint_dir "../gt4histocr-calamari1" \
-  -I OCR-D-SEG-LINE -O OCR-D-OCR-CALAMARI
+  -P checkpoint_dir qurator-gt4histocr-1.0 \
+  -I OCR-D-SEG-LINE-SBB -O OCR-D-OCR-CALAMARI
 ```
 
 

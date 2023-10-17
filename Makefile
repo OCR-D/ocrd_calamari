@@ -4,6 +4,7 @@ GIT_CLONE = git clone
 PYTHON = python3
 PYTEST_ARGS = -W 'ignore::DeprecationWarning' -W 'ignore::FutureWarning'
 MODEL = qurator-gt4histocr-1.0
+EXAMPLE = actevedef_718448162.first-page+binarization+segmentation
 
 # BEGIN-EVAL makefile-parser --make-help Makefile
 
@@ -13,7 +14,7 @@ help:
 	@echo ""
 	@echo "    install          Install ocrd_calamari"
 	@echo "    $(MODEL)         Get Calamari model (from SBB)"
-	@echo "    actevedef_718448162 Download example data"
+	@echo "    example          Download example data"
 	@echo "    deps-test        Install testing python deps via pip"
 	@echo "    repo/assets      Clone OCR-D/assets to ./repo/assets"
 	@echo "    test/assets      Setup test assets"
@@ -42,11 +43,14 @@ $(MODEL):
 	# Workaround, see #91 https://github.com/OCR-D/ocrd_calamari/issues/91
 	fix-calamari1-model ~/.local/share/ocrd-resources/ocrd-calamari-recognize/$@
 
-# Download example data (not used currently)
-actevedef_718448162:
-	wget https://qurator-data.de/examples/actevedef_718448162.zip \
-	&& unzip actevedef_718448162.zip \
-	&& rm actevedef_718448162.zip
+# Download example data (for the README)
+example: $(EXAMPLE)
+
+$(EXAMPLE):
+	wget -c https://qurator-data.de/examples/$(EXAMPLE).zip -O $(EXAMPLE).zip.tmp
+	mv $(EXAMPLE).zip.tmp $(EXAMPLE).zip
+	unzip $(EXAMPLE).zip
+	rm $(EXAMPLE).zip
 
 
 
@@ -89,4 +93,4 @@ coverage: test/assets $(MODEL)
 	coverage report
 	coverage html
 
-.PHONY: install assets-clean deps-test test coverage $(MODEL)
+.PHONY: install assets-clean deps-test test coverage $(MODEL) example
