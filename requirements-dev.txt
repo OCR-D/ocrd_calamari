@@ -2,6 +2,7 @@ pytest
 coverage
 pytest-cov
 pytest-mypy
+types-setuptools
 black
 pre-commit
 
