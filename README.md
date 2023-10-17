@@ -10,7 +10,7 @@
 
 **ocrd_calamari** offers a [OCR-D](https://ocr-d.de) compliant workspace processor for the functionality of Calamari OCR. It uses OCR-D workspaces (METS) with [PAGE XML](https://github.com/PRImA-Research-Lab/PAGE-XML) documents as input and output.
 
-This processor only operates on the text line level and so needs a line segmentation (and by extension a binarized 
+This processor only operates on the text line level and so needs a line segmentation (and by extension a binarized
 image) as its input.
 
 In addition to the line text it may also output word and glyph segmentation
@@ -28,11 +28,11 @@ further image-based processing.
 
 ### From PyPI
 
-```
+```sh
 pip install ocrd_calamari
 ```
 
-### From Repo
+### From the git repository
 
 ```sh
 pip install .
@@ -67,7 +67,6 @@ ocrd-calamari-recognize \
   -P checkpoint_dir qurator-gt4histocr-1.0 \
   -I OCR-D-SEG-LINE-SBB -O OCR-D-OCR-CALAMARI
 ```
-
 
 You may want to have a look at the [ocrd-tool.json](ocrd_calamari/ocrd-tool.json) descriptions
 for additional parameters and default values.
