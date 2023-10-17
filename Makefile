@@ -60,7 +60,7 @@ $(EXAMPLE):
 
 # Install testing python deps via pip
 deps-test:
-	$(PIP_INSTALL) -r requirements-test.txt
+	$(PIP_INSTALL) -r requirements-dev.txt
 
 deps-test-ubuntu: deps-test
 	apt-get install -y make git curl wget imagemagick
