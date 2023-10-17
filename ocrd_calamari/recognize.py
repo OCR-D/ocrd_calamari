@@ -7,7 +7,6 @@ from glob import glob
 import numpy as np
 from ocrd_utils import (
     assert_file_grp_cardinality,
-    concat_padded,
     coordinates_for_segment,
     getLogger,
     make_file_id,
@@ -27,8 +26,6 @@ from calamari_ocr.proto import VoterParams
 from ocrd import Processor
 from ocrd_modelfactory import page_from_file
 from ocrd_models.ocrd_page import (
-        LabelType, LabelsType,
-        MetadataItemType,
     TextEquivType,
     WordType,
     GlyphType,

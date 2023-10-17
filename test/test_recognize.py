@@ -2,9 +2,7 @@ import os
 import shutil
 import subprocess
 import tempfile
-import urllib.request
 from lxml import etree
-from glob import glob
 
 import pytest
 import logging
