@@ -15,7 +15,7 @@ METS_KANT = assets.url_of(
     "kant_aufklaerung_1784-page-region-line-word_glyph/data/mets.xml"
 )
 WORKSPACE_DIR = tempfile.mkdtemp(prefix="test-ocrd-calamari-")
-CHECKPOINT_DIR = os.getenv("MODEL")
+CHECKPOINT_DIR = os.getenv("MODEL", "qurator-gt4histocr-1.0")
 DEBUG = os.getenv("DEBUG", False)
 
 
