@@ -23,8 +23,9 @@ DEBUG = os.getenv("DEBUG", False)
 def page_namespace(tree):
     """Return the PAGE content namespace used in the given ElementTree.
 
-    This relies on the assumption that, in any given PAGE content file, the root element has the local name "PcGts". We
-    do not check if the files uses any valid PAGE namespace.
+    This relies on the assumption that, in any given PAGE content file, the root element
+    has the local name "PcGts". We do not check if the files uses any valid PAGE
+    namespace.
     """
     root_name = etree.QName(tree.getroot().tag)
     if root_name.localname == "PcGts":
@@ -61,9 +62,10 @@ def workspace():
 
     # The binarization options I have are:
     #
-    # a. ocrd_kraken which tries to install cltsm, whose installation is borken on my machine (protobuf)
-    # b. ocrd_olena which 1. I cannot fully install via pip and 2. whose dependency olena doesn't compile on my
-    #    machine
+    # a. ocrd_kraken which tries to install cltsm, whose installation is borken on my
+    #    machine (protobuf)
+    # b. ocrd_olena which 1. I cannot fully install via pip and 2. whose dependency
+    #    olena doesn't compile on my machine
     # c. just fumble with the original files
     #
     # So I'm going for option c.
@@ -72,7 +74,8 @@ def workspace():
         path = os.path.join(workspace.directory, imgf.local_filename)
         subprocess.call(["mogrify", "-threshold", "50%", path])
 
-    # Remove GT Words and TextEquivs, to not accidently check GT text instead of the OCR text
+    # Remove GT Words and TextEquivs, to not accidently check GT text instead of the
+    # OCR text
     # XXX Review data again
     for of in workspace.mets.find_files(fileGrp="OCR-D-GT-SEG-WORD-GLYPH"):
         workspace.download_file(of)
@@ -152,7 +155,9 @@ def test_word_segmentation(workspace):
     )[0]
     assert line is not None
 
-    # The textline should a. contain multiple words and b. these should concatenate fine to produce the same line text
+    # The textline should
+    # a. contain multiple words and
+    # b. these should concatenate fine to produce the same line text
     words = line.xpath(".//pc:Word", namespaces=nsmap)
     assert len(words) >= 2
     words_text = " ".join(
@@ -162,7 +167,8 @@ def test_word_segmentation(workspace):
     line_text = line.xpath("pc:TextEquiv/pc:Unicode", namespaces=nsmap)[0].text
     assert words_text == line_text
 
-    # For extra measure, check that we're not seeing any glyphs, as we asked for textequiv_level == "word"
+    # For extra measure, check that we're not seeing any glyphs, as we asked for
+    # textequiv_level == "word"
     glyphs = tree.xpath("//pc:Glyph", namespaces=nsmap)
     assert len(glyphs) == 0
 
@@ -174,7 +180,8 @@ def test_glyphs(workspace):
         output_file_grp="OCR-D-OCR-CALAMARI",
         parameter={
             "checkpoint_dir": CHECKPOINT_DIR,
-            "textequiv_level": "glyph",  # Note that we're going down to glyph level here
+            # Note that we're going down to glyph level here
+            "textequiv_level": "glyph",
         },
     ).process()
     workspace.save_mets()

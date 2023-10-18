@@ -67,8 +67,14 @@ class CalamariRecognize(Processor):
         self.network_input_channels = self.predictor.predictors[
             0
         ].network.input_channels
-        # self.network_input_channels = self.predictor.predictors[0].network_params.channels # not used!
-        # binarization = self.predictor.predictors[0].model_params.data_preprocessor.binarization # not used!
+
+        # not used:
+        # self.network_input_channels = \
+        #        self.predictor.predictors[0].network_params.channels
+        # not used:
+        # binarization = \
+        #        self.predictor.predictors[0].model_params\
+        #        .data_preprocessor.binarization
         # self.features = ('' if self.network_input_channels != 1 else
         #                  'binarized' if binarization != 'GRAY' else
         #                  'grayscale_normalized')
@@ -82,9 +88,10 @@ class CalamariRecognize(Processor):
         """
         Perform text recognition with Calamari on the workspace.
 
-        If ``texequiv_level`` is ``word`` or ``glyph``, then additionally create word / glyph level segments by
-        splitting at white space characters / glyph boundaries. In the case of ``glyph``, add all alternative character
-        hypotheses down to ``glyph_conf_cutoff`` confidence threshold.
+        If ``texequiv_level`` is ``word`` or ``glyph``, then additionally create word /
+        glyph level segments by splitting at white space characters / glyph boundaries.
+        In the case of ``glyph``, add all alternative character hypotheses down to
+        ``glyph_conf_cutoff`` confidence threshold.
         """
         log = getLogger("processor.CalamariRecognize")
 
@@ -174,10 +181,12 @@ class CalamariRecognize(Processor):
 
                     # Build line text on our own
                     #
-                    # Calamari does whitespace post-processing on prediction.sentence, while it does not do the same
-                    # on prediction.positions. Do it on our own to have consistency.
+                    # Calamari does whitespace post-processing on prediction.sentence,
+                    # while it does not do the same on prediction.positions. Do it on
+                    # our own to have consistency.
                     #
-                    # XXX Check Calamari's built-in post-processing on prediction.sentence
+                    # XXX Check Calamari's built-in post-processing on
+                    #     prediction.sentence
 
                     def _sort_chars(p):
                         """Filter and sort chars of prediction p"""
@@ -249,8 +258,9 @@ class CalamariRecognize(Processor):
 
                     # Save word results
                     #
-                    # Calamari OCR does not provide word positions, so we infer word positions from a. text segmentation
-                    # and b. the glyph positions. This is necessary because the PAGE XML format enforces a strict
+                    # Calamari OCR does not provide word positions, so we infer word
+                    # positions from a. text segmentation and b. the glyph positions.
+                    # This is necessary because the PAGE XML format enforces a strict
                     # hierarchy of lines > words > glyphs.
 
                     def _words(s):
@@ -319,7 +329,9 @@ class CalamariRecognize(Processor):
                                         )
 
                                         # Add predictions (= TextEquivs)
-                                        char_index_start = 1  # Must start with 1, see https://ocr-d.github.io/page#multiple-textequivs
+                                        char_index_start = 1
+                                        # Index must start with 1, see
+                                        # https://ocr-d.github.io/page#multiple-textequivs
                                         for char_index, char in enumerate(
                                             _sort_chars(p), start=char_index_start
                                         ):
@@ -354,13 +366,14 @@ class CalamariRecognize(Processor):
             )
 
 
-# TODO: This is a copy of ocrd_tesserocr's function, and should probably be moved to a ocrd lib
+# TODO: This is a copy of ocrd_tesserocr's function, and should probably be moved to a
+#       ocrd lib
 def _page_update_higher_textequiv_levels(level, pcgts):
-    """Update the TextEquivs of all PAGE-XML hierarchy levels above `level` for consistency.
+    """Update the TextEquivs of all higher PAGE-XML hierarchy levels for consistency.
 
-    Starting with the hierarchy level chosen for processing,
-    join all first TextEquiv (by the rules governing the respective level)
-    into TextEquiv of the next higher level, replacing them.
+    Starting with the hierarchy level `level`chosen for processing, join all first
+    TextEquiv (by the rules governing the respective level) into TextEquiv of the next
+    higher level, replacing them.
     """
     regions = pcgts.get_Page().get_TextRegion()
     if level != "region":
