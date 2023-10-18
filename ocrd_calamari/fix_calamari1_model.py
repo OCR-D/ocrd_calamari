@@ -1,8 +1,9 @@
-import re
 import json
-import click
-from glob import glob
+import re
 from copy import deepcopy
+from glob import glob
+
+import click
 
 from ocrd_calamari.util import working_directory
 
@@ -23,7 +24,7 @@ def fix_calamari1_model(checkpoint_dir):
                 old_j = deepcopy(j)
 
             for v in j["model"].values():
-                if type(v) != dict:
+                if isinstance(v, dict):
                     continue
                 for child in v.get("children", []):
                     for replacement in child.get("replacements", []):

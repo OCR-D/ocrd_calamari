@@ -1,41 +1,44 @@
 from __future__ import absolute_import
 
-import os
 import itertools
+import os
 from glob import glob
 
 import numpy as np
+from ocrd import Processor
+from ocrd_modelfactory import page_from_file
+from ocrd_models.ocrd_page import (
+    CoordsType,
+    GlyphType,
+    TextEquivType,
+    WordType,
+    to_xml,
+)
 from ocrd_utils import (
+    MIMETYPE_PAGE,
     assert_file_grp_cardinality,
     coordinates_for_segment,
     getLogger,
     make_file_id,
     points_from_polygon,
     polygon_from_x0y0x1y1,
-    MIMETYPE_PAGE,
     tf_disable_interactive_logs,
 )
 
 # Disable tensorflow/keras logging via print before importing calamari
+# (and disable ruff's import checks and sorting here)
+# ruff: noqa: E402
+# ruff: isort: off
 tf_disable_interactive_logs()
 
+from tensorflow import __version__ as tensorflow_version
 from calamari_ocr import __version__ as calamari_version
 from calamari_ocr.ocr import MultiPredictor
 from calamari_ocr.ocr.voting import voter_from_proto
 from calamari_ocr.proto import VoterParams
-from ocrd import Processor
-from ocrd_modelfactory import page_from_file
-from ocrd_models.ocrd_page import (
-    TextEquivType,
-    WordType,
-    GlyphType,
-    CoordsType,
-    to_xml,
-)
+# ruff: isort: on
 
 from ocrd_calamari.config import OCRD_TOOL
-
-from tensorflow import __version__ as tensorflow_version
 
 TOOL = "ocrd-calamari-recognize"
 

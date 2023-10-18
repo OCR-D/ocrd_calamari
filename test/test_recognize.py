@@ -1,14 +1,15 @@
+import logging
 import os
 import shutil
 import subprocess
 import tempfile
-from lxml import etree
 
 import pytest
-import logging
+from lxml import etree
 from ocrd.resolver import Resolver
 
 from ocrd_calamari import CalamariRecognize
+
 from .base import assets
 
 METS_KANT = assets.url_of(
