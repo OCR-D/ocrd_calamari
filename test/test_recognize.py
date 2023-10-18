@@ -189,6 +189,3 @@ def test_glyphs(workspace):
     # The result should contain a lot of glyphs
     glyphs = tree.xpath("//pc:Glyph", namespaces=nsmap)
     assert len(glyphs) >= 100
-
-
-# vim:tw=120:

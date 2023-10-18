@@ -393,6 +393,3 @@ def _page_update_higher_textequiv_levels(level, pcgts):
                 for line in lines
             )
             region.set_TextEquiv([TextEquivType(Unicode=region_unicode)])  # remove old
-
-
-# vim:tw=120:
