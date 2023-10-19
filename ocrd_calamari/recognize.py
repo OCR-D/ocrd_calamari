@@ -99,7 +99,7 @@ class CalamariRecognize(Processor):
         assert_file_grp_cardinality(self.input_file_grp, 1)
         assert_file_grp_cardinality(self.output_file_grp, 1)
 
-        for (n, input_file) in enumerate(self.input_files):
+        for n, input_file in enumerate(self.input_files):
             page_id = input_file.pageId or input_file.ID
             log.info("INPUT FILE %i / %s", n, page_id)
             pcgts = page_from_file(self.workspace.download_file(input_file))
@@ -173,7 +173,6 @@ class CalamariRecognize(Processor):
                 for line, line_coords, raw_results in zip(
                     textlines, line_coordss, raw_results_all
                 ):
-
                     for i, p in enumerate(raw_results):
                         p.prediction.id = "fold_{}".format(i)
 
