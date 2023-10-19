@@ -1,9 +1,5 @@
-# See https://pre-commit.com for more information
-# See https://pre-commit.com/hooks.html for more hooks
 repos:
--   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
-    hooks:
+-   hooks:
     -   id: trailing-whitespace
     -   id: end-of-file-fixer
     -   id: check-json
@@ -11,20 +7,26 @@ repos:
     -   id: check-yaml
     -   id: check-added-large-files
     -   id: check-ast
-
--   repo: https://github.com/psf/black
-    rev: 23.10.0
-    hooks:
+    repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+-   hooks:
     -   id: black
-
--   repo: https://github.com/astral-sh/ruff-pre-commit
+    repo: https://github.com/psf/black
+    rev: 23.10.0
+-   hooks:
+    -   args:
+        - --fix
+        - --exit-non-zero-on-fix
+        id: ruff
+    repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.1.0
-    hooks:
-    -   id: ruff
-        args: [--fix, --exit-non-zero-on-fix]
-
--   repo: https://github.com/pre-commit/mirrors-mypy
+-   hooks:
+    -   additional_dependencies:
+        - types-setuptools
+        id: mypy
+    repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.6.1
-    hooks:
-    -   id: mypy
-        additional_dependencies: ['types-setuptools']
+-   hooks:
+    -   id: pre-commit-update
+    repo: https://gitlab.com/vojko.pribudic/pre-commit-update
+    rev: v0.1.0
