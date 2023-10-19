@@ -36,6 +36,7 @@ from calamari_ocr import __version__ as calamari_version
 from calamari_ocr.ocr import MultiPredictor
 from calamari_ocr.ocr.voting import voter_from_proto
 from calamari_ocr.proto import VoterParams
+
 # ruff: isort: on
 
 from ocrd_calamari.config import OCRD_TOOL
