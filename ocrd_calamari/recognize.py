@@ -235,9 +235,8 @@ class CalamariRecognize(Processor):
                     line_text = "".join(_sort_chars(p)[0].char for p in positions)
                     if line_text != prediction.sentence:
                         log.warning(
-                            "Our own line text is not the same as Calamari's: '%s' != '%s'",
-                            line_text,
-                            prediction.sentence,
+                            f"Our own line text is not the same as Calamari's:"
+                            f"'{line_text}' != '{prediction.sentence}'"
                         )
 
                     # Delete existing results
