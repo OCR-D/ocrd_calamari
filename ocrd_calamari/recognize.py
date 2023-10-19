@@ -1,41 +1,45 @@
 from __future__ import absolute_import
 
-import os
 import itertools
+import os
 from glob import glob
 
 import numpy as np
+from ocrd import Processor
+from ocrd_modelfactory import page_from_file
+from ocrd_models.ocrd_page import (
+    CoordsType,
+    GlyphType,
+    TextEquivType,
+    WordType,
+    to_xml,
+)
 from ocrd_utils import (
+    MIMETYPE_PAGE,
     assert_file_grp_cardinality,
     coordinates_for_segment,
     getLogger,
     make_file_id,
     points_from_polygon,
     polygon_from_x0y0x1y1,
-    MIMETYPE_PAGE,
     tf_disable_interactive_logs,
 )
 
 # Disable tensorflow/keras logging via print before importing calamari
+# (and disable ruff's import checks and sorting here)
+# ruff: noqa: E402
+# ruff: isort: off
 tf_disable_interactive_logs()
 
+from tensorflow import __version__ as tensorflow_version
 from calamari_ocr import __version__ as calamari_version
 from calamari_ocr.ocr import MultiPredictor
 from calamari_ocr.ocr.voting import voter_from_proto
 from calamari_ocr.proto import VoterParams
-from ocrd import Processor
-from ocrd_modelfactory import page_from_file
-from ocrd_models.ocrd_page import (
-    TextEquivType,
-    WordType,
-    GlyphType,
-    CoordsType,
-    to_xml,
-)
+
+# ruff: isort: on
 
 from ocrd_calamari.config import OCRD_TOOL
-
-from tensorflow import __version__ as tensorflow_version
 
 TOOL = "ocrd-calamari-recognize"
 
@@ -64,8 +68,14 @@ class CalamariRecognize(Processor):
         self.network_input_channels = self.predictor.predictors[
             0
         ].network.input_channels
-        # self.network_input_channels = self.predictor.predictors[0].network_params.channels # not used!
-        # binarization = self.predictor.predictors[0].model_params.data_preprocessor.binarization # not used!
+
+        # not used:
+        # self.network_input_channels = \
+        #        self.predictor.predictors[0].network_params.channels
+        # not used:
+        # binarization = \
+        #        self.predictor.predictors[0].model_params\
+        #        .data_preprocessor.binarization
         # self.features = ('' if self.network_input_channels != 1 else
         #                  'binarized' if binarization != 'GRAY' else
         #                  'grayscale_normalized')
@@ -79,16 +89,17 @@ class CalamariRecognize(Processor):
         """
         Perform text recognition with Calamari on the workspace.
 
-        If ``texequiv_level`` is ``word`` or ``glyph``, then additionally create word / glyph level segments by
-        splitting at white space characters / glyph boundaries. In the case of ``glyph``, add all alternative character
-        hypotheses down to ``glyph_conf_cutoff`` confidence threshold.
+        If ``texequiv_level`` is ``word`` or ``glyph``, then additionally create word /
+        glyph level segments by splitting at white space characters / glyph boundaries.
+        In the case of ``glyph``, add all alternative character hypotheses down to
+        ``glyph_conf_cutoff`` confidence threshold.
         """
         log = getLogger("processor.CalamariRecognize")
 
         assert_file_grp_cardinality(self.input_file_grp, 1)
         assert_file_grp_cardinality(self.output_file_grp, 1)
 
-        for (n, input_file) in enumerate(self.input_files):
+        for n, input_file in enumerate(self.input_files):
             page_id = input_file.pageId or input_file.ID
             log.info("INPUT FILE %i / %s", n, page_id)
             pcgts = page_from_file(self.workspace.download_file(input_file))
@@ -162,7 +173,6 @@ class CalamariRecognize(Processor):
                 for line, line_coords, raw_results in zip(
                     textlines, line_coordss, raw_results_all
                 ):
-
                     for i, p in enumerate(raw_results):
                         p.prediction.id = "fold_{}".format(i)
 
@@ -171,10 +181,12 @@ class CalamariRecognize(Processor):
 
                     # Build line text on our own
                     #
-                    # Calamari does whitespace post-processing on prediction.sentence, while it does not do the same
-                    # on prediction.positions. Do it on our own to have consistency.
+                    # Calamari does whitespace post-processing on prediction.sentence,
+                    # while it does not do the same on prediction.positions. Do it on
+                    # our own to have consistency.
                     #
-                    # XXX Check Calamari's built-in post-processing on prediction.sentence
+                    # XXX Check Calamari's built-in post-processing on
+                    #     prediction.sentence
 
                     def _sort_chars(p):
                         """Filter and sort chars of prediction p"""
@@ -223,9 +235,8 @@ class CalamariRecognize(Processor):
                     line_text = "".join(_sort_chars(p)[0].char for p in positions)
                     if line_text != prediction.sentence:
                         log.warning(
-                            "Our own line text is not the same as Calamari's: '%s' != '%s'",
-                            line_text,
-                            prediction.sentence,
+                            f"Our own line text is not the same as Calamari's:"
+                            f"'{line_text}' != '{prediction.sentence}'"
                         )
 
                     # Delete existing results
@@ -246,8 +257,9 @@ class CalamariRecognize(Processor):
 
                     # Save word results
                     #
-                    # Calamari OCR does not provide word positions, so we infer word positions from a. text segmentation
-                    # and b. the glyph positions. This is necessary because the PAGE XML format enforces a strict
+                    # Calamari OCR does not provide word positions, so we infer word
+                    # positions from a. text segmentation and b. the glyph positions.
+                    # This is necessary because the PAGE XML format enforces a strict
                     # hierarchy of lines > words > glyphs.
 
                     def _words(s):
@@ -316,7 +328,9 @@ class CalamariRecognize(Processor):
                                         )
 
                                         # Add predictions (= TextEquivs)
-                                        char_index_start = 1  # Must start with 1, see https://ocr-d.github.io/page#multiple-textequivs
+                                        char_index_start = 1
+                                        # Index must start with 1, see
+                                        # https://ocr-d.github.io/page#multiple-textequivs
                                         for char_index, char in enumerate(
                                             _sort_chars(p), start=char_index_start
                                         ):
@@ -351,13 +365,14 @@ class CalamariRecognize(Processor):
             )
 
 
-# TODO: This is a copy of ocrd_tesserocr's function, and should probably be moved to a ocrd lib
+# TODO: This is a copy of ocrd_tesserocr's function, and should probably be moved to a
+#       ocrd lib
 def _page_update_higher_textequiv_levels(level, pcgts):
-    """Update the TextEquivs of all PAGE-XML hierarchy levels above `level` for consistency.
+    """Update the TextEquivs of all higher PAGE-XML hierarchy levels for consistency.
 
-    Starting with the hierarchy level chosen for processing,
-    join all first TextEquiv (by the rules governing the respective level)
-    into TextEquiv of the next higher level, replacing them.
+    Starting with the hierarchy level `level`chosen for processing, join all first
+    TextEquiv (by the rules governing the respective level) into TextEquiv of the next
+    higher level, replacing them.
     """
     regions = pcgts.get_Page().get_TextRegion()
     if level != "region":
@@ -390,6 +405,3 @@ def _page_update_higher_textequiv_levels(level, pcgts):
                 for line in lines
             )
             region.set_TextEquiv([TextEquivType(Unicode=region_unicode)])  # remove old
-
-
-# vim:tw=120:

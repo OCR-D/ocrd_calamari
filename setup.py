@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-from pathlib import Path
 import json
+from pathlib import Path
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 with open("./ocrd-tool.json", "r") as f:
     version = json.load(f)["version"]

@@ -1,0 +1,2 @@
+# TODO: This should go to pyproject.toml once we have one
+select = ["E", "F", "I"]
