@@ -24,7 +24,7 @@ def fix_calamari1_model(checkpoint_dir):
                 old_j = deepcopy(j)
 
             for v in j["model"].values():
-                if isinstance(v, dict):
+                if not isinstance(v, dict):
                     continue
                 for child in v.get("children", []):
                     for replacement in child.get("replacements", []):
