@@ -14,10 +14,22 @@ jobs:
       - PYTHONIOENCODING: utf-8
     steps:
       - checkout
+      - restore_cache:
+          keys: 
+            - v01-pydeps-{{ checksum "requirements.txt" }}
+            - v01-pydeps-{{ checksum "requirements-dev.txt" }}
+          paths:
+            - "~/.cache/pip"
       - run: pip3 install --upgrade pip
       - run: make install deps-test-ubuntu PIP_INSTALL="pip3 install"
       - run: make coverage
       - codecov/upload
+      - save_cache:
+          keys: 
+            - v01-pydeps-{{ checksum "requirements.txt" }}
+            - v01-pydeps-{{ checksum "requirements-dev.txt" }}
+          paths:
+            - "~/.cache/pip"
 
 workflows:
   build:
