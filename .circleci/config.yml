@@ -16,8 +16,8 @@ jobs:
       - checkout
       - restore_cache:
           keys: 
-            - v01-pydeps-{{ checksum "requirements.txt" }}
-            - v01-pydeps-{{ checksum "requirements-dev.txt" }}
+            - v01-pydeps-<< parameters.python-image >>-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}
+            - v01-pydeps-<< parameters.python-image >>
           paths:
             - "~/.cache/pip"
       - run: pip3 install --upgrade pip
@@ -25,9 +25,7 @@ jobs:
       - run: make coverage
       - codecov/upload
       - save_cache:
-          keys: 
-            - v01-pydeps-{{ checksum "requirements.txt" }}
-            - v01-pydeps-{{ checksum "requirements-dev.txt" }}
+          key: v01-pydeps-<< parameters.python-image >>-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}
           paths:
             - "~/.cache/pip"
 
