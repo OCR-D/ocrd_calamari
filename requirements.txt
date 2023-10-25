@@ -1,7 +1,7 @@
 tensorflow >= 2.5.0
 numpy
 #calamari-ocr == 1.0.*, >= 1.0.6
-calamari-ocr @ git+https://github.com/Calamari-OCR/calamari.git@9c8fb004d4f57b8fa51b82aa499e753589e007fd
+calamari-ocr @ git+https://github.com/Calamari-OCR/calamari.git@6b1412b997b6830935e28a0234071352e09a08c2
 setuptools >= 41.0.0  # tensorboard depends on this, but why do we get an error at runtime?
 click
 ocrd >= 2.54.0
