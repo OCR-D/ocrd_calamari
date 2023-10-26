@@ -10,7 +10,7 @@ with open("./ocrd-tool.json", "r") as f:
 setup(
     name="ocrd_calamari",
     version=version,
-    description="Calamari bindings",
+    description="Recognize text using Calamari OCR and the OCR-D framework",
     long_description=Path("README.md").read_text(),
     long_description_content_type="text/markdown",
     author="Konstantin Baierer, Mike Gerber",
