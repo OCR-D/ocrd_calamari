@@ -15,7 +15,7 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          keys: 
+          keys:
             - v01-pydeps-<< parameters.python-image >>-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}
             - v01-pydeps-<< parameters.python-image >>
           paths:
