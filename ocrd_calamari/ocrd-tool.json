@@ -42,7 +42,35 @@
           "default": 0.001,
           "description": "Only include glyph alternatives with confidences above this threshold"
         }
-      }
+      },
+      "resources": [
+        {
+          "url": "https://qurator-data.de/calamari-models/GT4HistOCR/2019-12-11T11_10+0100/model.tar.xz",
+          "type": "archive",
+          "name": "qurator-gt4histocr-1.0",
+          "description": "Calamari model trained with GT4HistOCR",
+          "size": 90275264,
+          "version_range": ">= 1.0.0"
+        },
+        {
+          "url": "https://github.com/Calamari-OCR/calamari_models_experimental/releases/download/v0.0.1-pre1/c1_fraktur19-1.tar.gz",
+          "type": "archive",
+          "name": "zpd-fraktur19",
+          "description": "Model trained on 19th century german fraktur",
+          "path_in_archive": "c1_fraktur19-1",
+          "size": 86009886,
+          "version_range": ">= 1.0.0"
+        },
+        {
+          "url": "https://github.com/Calamari-OCR/calamari_models_experimental/releases/download/v0.0.1-pre1/c1_latin-script-hist-3.tar.gz",
+          "type": "archive",
+          "name": "zpd-latin-script-hist-3",
+          "path_in_archive": "c1_latin-script-hist-3",
+          "description": "Model trained on historical latin-script texts",
+          "size": 88416863,
+          "version_range": ">= 1.0.0"
+        }
+      ]
     }
   }
 }
