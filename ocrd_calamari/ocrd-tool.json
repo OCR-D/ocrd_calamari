@@ -74,6 +74,7 @@
           "url": "https://github.com/Calamari-OCR/calamari_models/releases/download/1.1/antiqua_historical.zip",
           "type": "archive",
           "name": "antiqua_historical",
+          "path_in_archive": "antiqua_historical",
           "description": "Antiqua parts of GT4HistOCR from Calamari-OCR/calamari_models (5-fold ensemble, normalized grayscale, NFC)",
           "size": 89615540,
           "version_range": ">= 1.0.0"
