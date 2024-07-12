@@ -83,6 +83,7 @@
           "url": "https://github.com/Calamari-OCR/calamari_models/releases/download/1.1/antiqua_historical_ligs.zip",
           "type": "archive",
           "name": "antiqua_historical_ligs",
+          "path_in_archive": "antiqua_historical_ligs",
           "description": "Antiqua parts of GT4HistOCR with enriched ligatures from Calamari-OCR/calamari_models (5-fold ensemble, normalized grayscale, NFC)",
           "size": 87540762,
           "version_range": ">= 1.0.0"
