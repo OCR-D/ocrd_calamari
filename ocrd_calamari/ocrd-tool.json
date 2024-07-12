@@ -42,7 +42,116 @@
           "default": 0.001,
           "description": "Only include glyph alternatives with confidences above this threshold"
         }
-      }
+      },
+      "resources": [
+        {
+          "url": "https://qurator-data.de/calamari-models/GT4HistOCR/2019-12-11T11_10+0100/model.tar.xz",
+          "type": "archive",
+          "name": "qurator-gt4histocr-1.0",
+          "description": "Calamari model trained with GT4HistOCR",
+          "size": 90275264,
+          "version_range": ">= 1.0.0"
+        },
+        {
+          "url": "https://github.com/Calamari-OCR/calamari_models_experimental/releases/download/v0.0.1-pre1/c1_fraktur19-1.tar.gz",
+          "type": "archive",
+          "name": "zpd-fraktur19",
+          "description": "Model trained on 19th century german fraktur",
+          "path_in_archive": "c1_fraktur19-1",
+          "size": 86009886,
+          "version_range": ">= 1.0.0"
+        },
+        {
+          "url": "https://github.com/Calamari-OCR/calamari_models_experimental/releases/download/v0.0.1-pre1/c1_latin-script-hist-3.tar.gz",
+          "type": "archive",
+          "name": "zpd-latin-script-hist-3",
+          "path_in_archive": "c1_latin-script-hist-3",
+          "description": "Model trained on historical latin-script texts",
+          "size": 88416863,
+          "version_range": ">= 1.0.0"
+        },
+        {
+          "url": "https://github.com/Calamari-OCR/calamari_models/releases/download/1.1/antiqua_historical.zip",
+          "type": "archive",
+          "name": "antiqua_historical",
+          "path_in_archive": "antiqua_historical",
+          "description": "Antiqua parts of GT4HistOCR from Calamari-OCR/calamari_models (5-fold ensemble, normalized grayscale, NFC)",
+          "size": 89615540,
+          "version_range": ">= 1.0.0"
+        },
+        {
+          "url": "https://github.com/Calamari-OCR/calamari_models/releases/download/1.1/antiqua_historical_ligs.zip",
+          "type": "archive",
+          "name": "antiqua_historical_ligs",
+          "path_in_archive": "antiqua_historical_ligs",
+          "description": "Antiqua parts of GT4HistOCR with enriched ligatures from Calamari-OCR/calamari_models (5-fold ensemble, normalized grayscale, NFC)",
+          "size": 87540762,
+          "version_range": ">= 1.0.0"
+        },
+        {
+          "url": "https://github.com/Calamari-OCR/calamari_models/releases/download/1.1/fraktur_19th_century.zip",
+          "type": "archive",
+          "name": "fraktur_19th_century",
+          "path_in_archive": "fraktur_19th_century",
+          "description": "Fraktur 19th century parts of GT4HistOCR mixed with Fraktur data from Archiscribe and jze from Calamari-OCR/calamari_models (5-fold ensemble, normalized grayscale and nlbin, NFC)",
+          "size": 83895140,
+          "version_range": ">= 1.0.0"
+        },
+        {
+          "url": "https://github.com/Calamari-OCR/calamari_models/releases/download/1.1/fraktur_historical.zip",
+          "type": "archive",
+          "name": "fraktur_historical",
+          "path_in_archive": "fraktur_historical",
+          "description": "Fraktur parts of GT4HistOCR from Calamari-OCR/calamari_models (5-fold ensemble, normalized grayscale, NFC)",
+          "size": 87807639,
+          "version_range": ">= 1.0.0"
+        },
+        {
+          "url": "https://github.com/Calamari-OCR/calamari_models/releases/download/1.1/fraktur_historical_ligs.zip",
+          "type": "archive",
+          "name": "fraktur_historical_ligs",
+          "path_in_archive": "fraktur_historical_ligs",
+          "description": "Fraktur parts of GT4HistOCR with enriched ligatures from Calamari-OCR/calamari_models (5-fold ensemble, normalized grayscale, NFC)",
+          "size": 88039551,
+          "version_range": ">= 1.0.0"
+        },
+        {
+          "url": "https://github.com/Calamari-OCR/calamari_models/releases/download/1.1/gt4histocr.zip",
+          "type": "archive",
+          "name": "gt4histocr",
+          "path_in_archive": "gt4histocr",
+          "description": "GT4HistOCR from Calamari-OCR/calamari_models (5-fold ensemble, normalized grayscale, NFC)",
+          "size": 90107851,
+          "version_range": ">= 1.0.0"
+        },
+        {
+          "url": "https://github.com/Calamari-OCR/calamari_models/releases/download/1.1/historical_french.zip",
+          "type": "archive",
+          "name": "historical_french",
+          "path_in_archive": "historical_french",
+          "description": "17-19th century French prints from Calamari-OCR/calamari_models (5-fold ensemble, nlbin, NFC)",
+          "size": 87335250,
+          "version_range": ">= 1.0.0"
+        },
+        {
+          "url": "https://github.com/Calamari-OCR/calamari_models/releases/download/1.1/idiotikon.zip",
+          "type": "archive",
+          "name": "idiotikon",
+          "path_in_archive": "idiotikon",
+          "description": "Antiqua UW3 finetuned on Antiqua Idiotikon dictionary with many diacritics from Calamari-OCR/calamari_models (5-fold ensemble, nlbin, NFD)",
+          "size": 100807764,
+          "version_range": ">= 1.0.0"
+        },
+        {
+          "url": "https://github.com/Calamari-OCR/calamari_models/releases/download/1.1/uw3-modern-english.zip",
+          "type": "archive",
+          "name": "uw3-modern-english",
+          "path_in_archive": "uw3-modern-english",
+          "description": "Antiqua UW3 corpus from Calamari-OCR/calamari_models (5-fold ensemble, nlbin, NFC)",
+          "size": 85413520,
+          "version_range": ">= 1.0.0"
+        }
+      ]
     }
   }
 }
