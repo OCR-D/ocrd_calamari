@@ -141,7 +141,7 @@
           "description": "Antiqua UW3 corpus from Calamari-OCR/calamari_models (5-fold ensemble, nlbin, NFC)",
           "size": 85413520,
           "version_range": ">= 1.0.0"
-        },
+        }
       ]
     }
   }
