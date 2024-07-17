@@ -385,9 +385,11 @@ def _page_update_higher_textequiv_levels(level, pcgts):
                         for word in words:
                             glyphs = word.get_Glyph()
                             word_unicode = "".join(
-                                glyph.get_TextEquiv()[0].Unicode
-                                if glyph.get_TextEquiv()
-                                else ""
+                                (
+                                    glyph.get_TextEquiv()[0].Unicode
+                                    if glyph.get_TextEquiv()
+                                    else ""
+                                )
                                 for glyph in glyphs
                             )
                             word.set_TextEquiv(
