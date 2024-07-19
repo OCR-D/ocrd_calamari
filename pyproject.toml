@@ -9,6 +9,7 @@ authors = [
 ]
 description = "Recognize text using Calamari OCR and the OCR-D framework"
 readme = "README.md"
+license.file = "LICENSE"
 requires-python = ">=3.8"
 keywords = ["ocr", "ocr-d", "calamari-ocr"]
 
