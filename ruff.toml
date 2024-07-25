@@ -1,3 +1,0 @@
-# TODO: This should go to pyproject.toml once we have one
-[lint]
-select = ["E", "F", "I"]
