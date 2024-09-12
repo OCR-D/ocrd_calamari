@@ -43,6 +43,16 @@ from ocrd_calamari.config import OCRD_TOOL
 
 TOOL = "ocrd-calamari-recognize"
 
+BATCH_SIZE = 64
+if not hasattr(itertools, 'batched'):
+    def batched(iterable, n):
+        # batched('ABCDEFG', 3) → ABC DEF G
+        if n < 1:
+            raise ValueError('n must be at least one')
+        iterator = iter(iterable)
+        while batch := tuple(itertools.islice(iterator, n)):
+            yield batch
+    itertools.batched = batched
 
 class CalamariRecognize(Processor):
     def __init__(self, *args, **kwargs):
@@ -166,9 +176,11 @@ class CalamariRecognize(Processor):
                         line_image_np = np.array(line_image, dtype=np.uint8)
                     line_images_np.append(line_image_np)
                     line_coordss.append(line_coords)
-                raw_results_all = self.predictor.predict_raw(
-                    line_images_np, progress_bar=False
-                )
+
+                # avoid too large a batch size (causing OOM on CPU or GPU)
+                fun = lambda x: self.predictor.predict_raw(x, progress_bar=False)
+                raw_results_all = itertools.chain.from_iterable(
+                    map(fun, itertools.batched(line_images_np, BATCH_SIZE)))
 
                 for line, line_coords, raw_results in zip(
                     textlines, line_coordss, raw_results_all
