@@ -41,7 +41,7 @@ install:
 $(MODEL):
 	ocrd resmgr download ocrd-calamari-recognize $@
 	# Workaround, see #91 https://github.com/OCR-D/ocrd_calamari/issues/91
-	fix-calamari1-model ~/.local/share/ocrd-resources/ocrd-calamari-recognize/$@
+	fix-calamari1-model `ocrd-calamari-recognize --resolve-resource $@`
 
 # Download example data (for the README)
 example: $(EXAMPLE)
