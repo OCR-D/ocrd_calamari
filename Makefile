@@ -84,7 +84,7 @@ assets-clean:
 # Run unit tests
 test: test/assets $(MODEL)
 	# declare -p HTTP_PROXY
-	$(PYTHON) -m pytest --continue-on-collection-errors test $(PYTEST_ARGS)
+	$(PYTHON) -m pytest --continue-on-collection-errors --durations=0 test $(PYTEST_ARGS)
 
 # Run unit tests and determine test coverage
 coverage: test/assets $(MODEL)
