@@ -40,8 +40,6 @@ install:
 
 $(MODEL):
 	ocrd resmgr download ocrd-calamari-recognize $@
-	# Workaround, see #91 https://github.com/OCR-D/ocrd_calamari/issues/91
-	fix-calamari1-model ~/.local/share/ocrd-resources/ocrd-calamari-recognize/$@
 
 # Download example data (for the README)
 example: $(EXAMPLE)
@@ -84,7 +82,7 @@ assets-clean:
 # Run unit tests
 test: test/assets $(MODEL)
 	# declare -p HTTP_PROXY
-	$(PYTHON) -m pytest --continue-on-collection-errors test $(PYTEST_ARGS)
+	$(PYTHON) -m pytest --continue-on-collection-errors --durations=0 test $(PYTEST_ARGS)
 
 # Run unit tests and determine test coverage
 coverage: test/assets $(MODEL)

@@ -28,6 +28,7 @@ jobs:
           key: v01-pydeps-<< parameters.python-image >>-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}
           paths:
             - "~/.cache/pip"
+    resource_class: large
 
 workflows:
   build:

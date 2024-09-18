@@ -11,12 +11,8 @@
         "recognition/text-recognition"
       ],
       "description": "Recognize lines with Calamari",
-      "input_file_grp": [
-        "OCR-D-SEG-LINE"
-      ],
-      "output_file_grp": [
-        "OCR-D-OCR-CALAMARI"
-      ],
+      "input_file_grp_cardinality": 1,
+      "output_file_grp_cardinality": 1,
       "parameters": {
         "checkpoint_dir": {
           "description": "The directory containing calamari model files (*.ckpt.json). Uses all checkpoints in that directory",
