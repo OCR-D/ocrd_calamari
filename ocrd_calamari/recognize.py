@@ -3,6 +3,7 @@ from __future__ import absolute_import
 from typing import Optional
 import itertools
 from glob import glob
+from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
 from ocrd import Processor, OcrdPage, OcrdPageResult
@@ -46,8 +47,6 @@ if not hasattr(itertools, 'batched'):
     itertools.batched = batched
 
 class CalamariRecognize(Processor):
-    # max_workers = 1
-
     @property
     def executable(self):
         return 'ocrd-calamari-recognize'
@@ -82,6 +81,9 @@ class CalamariRecognize(Processor):
         voter_params = VoterParams()
         voter_params.type = VoterParams.Type.Value(self.parameter["voter"].upper())
         self.voter = voter_from_proto(voter_params)
+
+        # run in a background thread so GPU parts can be interleaved with CPU pre-/post-processing across pages
+        self.executor = ThreadPoolExecutor(max_workers=1)
 
     def process_page_pcgts(self, *input_pcgts: Optional[OcrdPage], page_id: Optional[str] = None) -> OcrdPageResult:
         """
@@ -158,9 +160,9 @@ class CalamariRecognize(Processor):
 
         lines, coords, images = zip(*lines)
         # not exposed in MultiPredictor yet, cf. calamari#361:
-        # results = self.predictor.predict_raw(images, progress_bar=False, batch_size=BATCH_SIZE)
+        # results = self.executor.submit(self.predictor.predict_raw, images, progress_bar=False, batch_size=BATCH_SIZE).result()
         # avoid too large a batch size (causing OOM on CPU or GPU)
-        fun = lambda x: self.predictor.predict_raw(x, progress_bar=False)
+        fun = lambda x: self.executor.submit(self.predictor.predict_raw, x, progress_bar=False).result()
         results = itertools.chain.from_iterable(
             map(fun, itertools.batched(images, BATCH_SIZE)))
         for line, line_coords, raw_results in zip(lines, coords, results):
