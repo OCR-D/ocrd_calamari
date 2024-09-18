@@ -36,6 +36,7 @@ from calamari_ocr import __version__ as calamari_version
 from calamari_ocr.ocr import MultiPredictor
 from calamari_ocr.ocr.voting import voter_from_proto
 from calamari_ocr.proto import VoterParams
+from tensorflow import config as tensorflow_config
 
 # ruff: isort: on
 
@@ -71,9 +72,15 @@ class CalamariRecognize(Processor):
         """
         Set up the model prior to processing.
         """
+        log = getLogger("processor.CalamariRecognize")
+        devices = tensorflow_config.list_physical_devices("GPU")
+        for device in devices:
+            log.info("using GPU device %s", device)
+            tensorflow_config.experimental.set_memory_growth(device, True)
         resolved = self.resolve_resource(self.parameter["checkpoint_dir"])
         checkpoints = glob("%s/*.ckpt.json" % resolved)
         self.predictor = MultiPredictor(checkpoints=checkpoints, batch_size=BATCH_SIZE)
+        log.info("loaded model %s", resolved)
 
         self.network_input_channels = self.predictor.predictors[
             0
