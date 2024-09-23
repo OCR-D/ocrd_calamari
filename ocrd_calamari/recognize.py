@@ -21,31 +21,13 @@ from ocrd_utils import (
     tf_disable_interactive_logs,
 )
 
-# Disable tensorflow/keras logging via print before importing calamari
-# (and disable ruff's import checks and sorting here)
-# ruff: noqa: E402
-# ruff: isort: off
-tf_disable_interactive_logs()
-
-from tensorflow import __version__ as tensorflow_version
-from calamari_ocr import __version__ as calamari_version
-from calamari_ocr.ocr import MultiPredictor
-from calamari_ocr.ocr.voting import voter_from_proto
-from calamari_ocr.proto import VoterParams
-from tensorflow import config as tensorflow_config
-
 # ruff: isort: on
 
-BATCH_SIZE = 64
-if not hasattr(itertools, 'batched'):
-    def batched(iterable, n):
-        # batched('ABCDEFG', 3) → ABC DEF G
-        if n < 1:
-            raise ValueError('n must be at least one')
-        iterator = iter(iterable)
-        while batch := tuple(itertools.islice(iterator, n)):
-            yield batch
-    itertools.batched = batched
+BATCH_SIZE = 12
+GROUP_BOUNDS = [100, 200, 400, 800, 1600, 3200, 6400]
+# default tfaip bucket_batch_sizes is buggy (inverse quotient)
+BATCH_GROUPS = [max(1, (max(GROUP_BOUNDS) * BATCH_SIZE) // length)
+                for length in GROUP_BOUNDS] + [BATCH_SIZE]
 
 class CalamariRecognize(Processor):
     @property
@@ -53,42 +35,148 @@ class CalamariRecognize(Processor):
         return 'ocrd-calamari-recognize'
 
     def show_version(self):
-        print(f"Version {self.version}, calamari {calamari_version}, tensorflow {tensorflow_version}, ocrd/core {OCRD_VERSION}")
+        from tensorflow import __version__ as tensorflow_version
+        from calamari_ocr import __version__ as calamari_version
+        from tfaip import __version__ as tfaip_version
+        print(f"Version {self.version}, "
+              f"calamari {calamari_version}, "
+              f"tfaip {tfaip_version}, "
+              f"tensorflow {tensorflow_version}, "
+              f"ocrd/core {OCRD_VERSION}"
+        )
+
+    def setup_calamari(self):
+        """
+        Set up the model prior to processing.
+        """
+        from calamari_ocr.ocr.predict.predictor import MultiPredictor, PredictorParams
+        from calamari_ocr.ocr.voting import VoterParams, VoterType
+        from tfaip.data.databaseparams import DataPipelineParams
+        from tfaip import DeviceConfigParams
+        from tfaip.device.device_config import DistributionStrategy
+        tf_disable_interactive_logs()
+        # load model
+        pred_params = PredictorParams(
+            silent=True,
+            progress_bar=False,
+            # TODO: expose device parameter
+            device=DeviceConfigParams(gpus=[0], dist_strategy=DistributionStrategy.CENTRAL_STORAGE),
+            pipeline=DataPipelineParams(
+                batch_size=BATCH_SIZE,
+                # Number of processes for data loading.
+                num_processes=4,
+                # group lines with similar lengths to reduce need for padding
+                # and optimally utilise batch size;
+                bucket_boundaries=GROUP_BOUNDS,
+                bucket_batch_sizes=BATCH_GROUPS,
+            )
+        )
+        voter_params = VoterParams()
+        voter_params.type = VoterType(self.parameter["voter"])
+
+        resolved = self.resolve_resource(self.parameter["checkpoint_dir"])
+        checkpoints = glob("%s/*.ckpt.json" % resolved)
+        self.logger.info("loading %d checkpoints", len(checkpoints))
+        self.predictor = MultiPredictor.from_paths(
+            checkpoints,
+            voter_params=voter_params,
+            predictor_params=pred_params,
+        )
+        #self.predictor.data.params.pre_proc.run_parallel = False
+        #self.predictor.data.params.post_proc.run_parallel = False
+        def element_length_fn(x):
+            return x["img_len"]
+        self.predictor.data.element_length_fn=lambda: element_length_fn
+
+        self.network_input_channels = self.predictor.data.params.input_channels
+        for preproc in self.predictor.data.params.pre_proc.processors:
+            self.logger.info("preprocessor: %s", str(preproc))
+
+    def predict_raw(self, images, lines, page_id=""):
+        # for instrumentation, reimplement raw data pipeline:
+        #from tfaip.data.pipeline.datagenerator import DataGenerator
+        from tfaip import PipelineMode, Sample
+        from tfaip.data.pipeline.datapipeline import RawDataPipeline
+        from tfaip.data.databaseparams import DataGeneratorParams
+        # from tfaip.data.pipeline.runningdatapipeline import InputSamplesGenerator, _wrap_dataset
+        #from PIL import Image
+        # class MyInputSamplesGenerator(InputSamplesGenerator):
+        #     def as_dataset(self, tf_dataset_generator):
+        #         def generator():
+        #             with self as samples:
+        #                 # now instrument the processors in the running pipeline
+        #                 # for pipeline in self.running_pipeline.pipeline:
+        #                 #     print("pipeline: %s" % str(pipeline))
+        #                 #     proc = pipeline.create_processor_fn()
+        #                 #     for processor in proc.processors:
+        #                 #         print("next processor: %s" % repr(processor))
+        #                 for s in samples:
+        #                     #Image.fromarray(s.inputs["img"].T.squeeze(), mode="L").save(s.meta["id"] + ".png")
+        #                     yield s
+        #         dataset = tf_dataset_generator.create(generator, self.data_generator.yields_batches())
+        #         def print_fn(*x):
+        #             import tensorflow as tf
+        #             tf.print(tf.shape(x[0]["img"]))
+        #             return x
+        #         #dataset = dataset.map(print_fn)
+        #         dataset = _wrap_dataset(
+        #             self.mode, dataset, self.pipeline_params, self.data, self.data_generator.yields_batches())
+        #         #dataset = dataset.map(print_fn)
+        #         return dataset
+        # class RawDataGenerator(DataGenerator):
+        #     def __len__(self):
+        #         return len(images)
+        #     def generate(self):
+        #         #return map(lambda x: Sample(inputs=x, meta={}), images)
+        #         def to_sample(x):
+        #             image, line = x
+        #             return Sample(inputs=image, meta={"id": line.id})
+        #         return map(to_sample, zip(images, lines))
+        # class RawDataPipeline(DataPipeline):
+            # def create_data_generator(self):
+            #     return RawDataGenerator(mode=self.mode, params=self.generator_params)
+            # def input_dataset_with_len(self, auto_repeat=None):
+            #     gen = self.generate_input_samples(auto_repeat=auto_repeat)
+            #     # gen = MyInputSamplesGenerator(
+            #     #     self._input_processors,
+            #     #     self.data,
+            #     #     self.create_data_generator(),
+            #     #     self.pipeline_params,
+            #     #     self.mode,
+            #     #     auto_repeat
+            #     # )
+            #     return gen.as_dataset(self._create_tf_dataset_generator()), len(gen)
+        # use tfaip's RawDataPipeline without instrumentation
+        assert len(lines) == len(images)
+        self.logger.debug("predicting %d images for page '%s'", len(images), page_id)
+        pipeline = RawDataPipeline(
+            [Sample(inputs=image, meta={"id": line.id})
+                   for image, line in zip(images, lines)],
+            self.predictor.params.pipeline,
+            self.predictor._data,
+            DataGeneratorParams(),
+        )
+        # list() - exhaust result generator to stay thread-safe:
+        predictions = list(self.predictor.predict_pipeline(pipeline))
+        self.logger.debug("predicted %d images for page '%s'", len(predictions), page_id)
+        assert len(predictions) == len(images)
+        return predictions
 
     def setup(self):
         """
         Set up the model prior to processing.
         """
-        devices = tensorflow_config.list_physical_devices("GPU")
-        for device in devices:
-            self.logger.info("using GPU device %s", device)
-            tensorflow_config.experimental.set_memory_growth(device, True)
-        resolved = self.resolve_resource(self.parameter["checkpoint_dir"])
-        checkpoints = glob("%s/*.ckpt.json" % resolved)
-        self.predictor = MultiPredictor(checkpoints=checkpoints, batch_size=BATCH_SIZE)
-
-        self.network_input_channels = self.predictor.predictors[
-            0
-        ].network.input_channels
-
         # not used:
-        # self.network_input_channels = \
-        #        self.predictor.predictors[0].network_params.channels
-        # not used:
-        # binarization = \
-        #        self.predictor.predictors[0].model_params\
-        #        .data_preprocessor.binarization
+        # binarization = any(isinstance(preproc, calamari_ocr.ocr.dataset.imageprocessors.center_normalizer.CenterNormalizerProcessorParams) for preproc in self.predictor.data.params.pre_proc.processors)
         # self.features = ('' if self.network_input_channels != 1 else
         #                  'binarized' if binarization != 'GRAY' else
         #                  'grayscale_normalized')
         self.features = ""
 
-        voter_params = VoterParams()
-        voter_params.type = VoterParams.Type.Value(self.parameter["voter"].upper())
-        self.voter = voter_from_proto(voter_params)
-
         # run in a background thread so GPU parts can be interleaved with CPU pre-/post-processing across pages
-        self.executor = ThreadPoolExecutor(max_workers=1)
+        self.executor = ThreadPoolExecutor(
+            max_workers=1, thread_name_prefix='bgtask_calamari', initializer=self.setup_calamari
+        )
 
     def process_page_pcgts(self, *input_pcgts: Optional[OcrdPage], page_id: Optional[str] = None) -> OcrdPageResult:
         """
@@ -106,6 +194,7 @@ class CalamariRecognize(Processor):
         )
 
         lines = []
+        maxw = 0
         for region in page.get_AllRegions(classes=["Text"]):
             region_image, region_coords = self.workspace.image_from_segment(
                 region, page_image, page_coords, feature_selector=self.features
@@ -164,18 +253,22 @@ class CalamariRecognize(Processor):
             return OcrdPageResult(pcgts)
 
         lines, coords, images = zip(*lines)
-        # not exposed in MultiPredictor yet, cf. calamari#361:
-        # results = self.executor.submit(self.predictor.predict_raw, images, progress_bar=False, batch_size=BATCH_SIZE).result()
-        # avoid too large a batch size (causing OOM on CPU or GPU)
-        fun = lambda x: self.executor.submit(self.predictor.predict_raw, x, progress_bar=False).result()
-        results = itertools.chain.from_iterable(
-            map(fun, itertools.batched(images, BATCH_SIZE)))
-        for line, line_coords, raw_results in zip(lines, coords, results):
-            for i, p in enumerate(raw_results):
-                p.prediction.id = "fold_{}".format(i)
+        # We cannot directly use the predictor, because all page threads must be synchronised
+        # on a single GPU-bound thread.
+        # predictions = self.predictor.predict_raw(images)
+        # Also, we cannot directly use predict_raw, because our pipeline params use bucket batching,
+        # i.e. reordering, so we have to pass in additional metadata for re-identification.
+        # predictions = self.executor.submit(self.predictor.predict_raw, images).result()
+        # See our predict_raw() implementation above.
+        predictions = self.executor.submit(self.predict_raw, images, lines, page_id=page_id).result()
+        # Map back predictions to lines via sample metadata
+        predict = {prediction.meta["id"]: prediction.outputs for prediction in predictions}
+        self.logger.info("Received %d line results for page '%s'", len(predict.keys()), page_id)
 
-            prediction = self.voter.vote_prediction_result(raw_results)
-            prediction.id = "voted"
+        #for line, line_coords, prediction in zip(lines, coords, predictions):
+        for line, line_coords in zip(lines, coords):
+            #raw_results, prediction = prediction.outputs
+            raw_results, prediction = predict[line.id]
 
             # Build line text on our own
             #
@@ -259,6 +352,8 @@ class CalamariRecognize(Processor):
             # positions from a. text segmentation and b. the glyph positions.
             # This is necessary because the PAGE XML format enforces a strict
             # hierarchy of lines > words > glyphs.
+            #
+            # FIXME: use calamari#282 for this
 
             def _words(s):
                 """Split words based on spaces and include spaces as 'words'"""

@@ -24,7 +24,9 @@
         },
         "voter": {
           "description": "The voting algorithm to use",
-          "type": "string", "default": "confidence_voter_default_ctc"
+          "type": "string",
+	  "default": "confidence_voter_default_ctc",
+	  "enum": ["confidence_voter_default_ctc", "sequence_voter"]
         },
         "textequiv_level": {
           "type": "string",
