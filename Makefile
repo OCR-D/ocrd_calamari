@@ -2,7 +2,9 @@ export  # export variables to subshells
 PIP_INSTALL = pip3 install
 GIT_CLONE = git clone
 PYTHON = python3
-PYTEST_ARGS = -W 'ignore::DeprecationWarning' -W 'ignore::FutureWarning'
+# we must isolate tests by forking because TF will never free CUDA memory
+# and we load the model several times (tests+parameterized):
+PYTEST_ARGS = -W 'ignore::DeprecationWarning' -W 'ignore::FutureWarning' --isolate
 MODEL = qurator-gt4histocr-1.0
 EXAMPLE = actevedef_718448162.first-page+binarization+segmentation
 
