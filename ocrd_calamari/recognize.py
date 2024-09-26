@@ -6,6 +6,7 @@ from glob import glob
 from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
+import cv2 as cv
 from ocrd import Processor, OcrdPage, OcrdPageResult
 from ocrd_models.ocrd_page import (
     CoordsType,
@@ -247,12 +248,16 @@ class CalamariRecognize(Processor):
                         region.id,
                     )
 
+                line_img = load_image(
+                    np.array(line_image, dtype=np.uint8),
+                    self.network_input_channels
+                )
                 if (
                     not all(line_image.size)
                     or line_image.height <= 8
                     or line_image.width <= 8
                     or "binarized" in line_coords["features"]
-                    and line_image.convert("1").getextrema()[0] == 255
+                    and line_img.min() == 255
                 ):
                     # empty size or too tiny or no foreground at all: skip
                     self.logger.warning(
@@ -261,7 +266,7 @@ class CalamariRecognize(Processor):
                         region.id,
                     )
                     continue
-                lines.append((line, line_coords, np.array(line_image, dtype=np.uint8)))
+                lines.append((line, line_coords, line_img))
 
         if not len(lines):
             self.logger.warning("No text lines on page '%s'", page_id)
@@ -502,3 +507,41 @@ def _page_update_higher_textequiv_levels(level, pcgts):
                 for line in lines
             )
             region.set_TextEquiv([TextEquivType(Unicode=region_unicode)])  # remove old
+
+# from calamari_ocr.utils.image.ImageLoader (but for PIL.Image objects)
+# (Calamari2 does not tolerate wrong input shape anymore -
+#  common preprocessors do not change last dimension)
+def load_image(img: np.ndarray, channels: int, to_gray_method : str = "cv") -> np.ndarray:
+    if len(img.shape) == 2:
+        img_channels = 1
+    elif len(img.shape) == 3:
+        img_channels = img.shape[-1]
+    else:
+        raise ValueError(f"Unknown image format. Must bei either WxH or WxHxC, but got {img.shape}.")
+
+    if img_channels == channels:
+        pass  # good
+    elif img_channels == 2 and channels == 1:
+        img = img[:, :, 0]
+    elif img_channels == 3 and channels == 1:
+        if to_gray_method == "avg":
+            img = np.mean(img.astype("float32"), axis=-1).astype(dtype=img.dtype)
+        elif to_gray_method == "cv":
+            img = cv.cvtColor(img, cv.COLOR_RGB2GRAY)
+        else:
+            raise ValueError(f"Unsupported image conversion method {to_gray_method}")
+    elif img_channels == 4 and channels == 1:
+        if to_gray_method == "avg":
+            img = np.mean(img[:, :, :3].astype("float32"), axis=-1).astype(dtype=img.dtype)
+        elif to_gray_method == "cv":
+            img = cv.cvtColor(img, cv.COLOR_RGBA2GRAY)
+        else:
+            raise ValueError(f"Unsupported image conversion method {to_gray_method}")
+    elif img_channels == 1 and channels == 3:
+        img = np.stack([img] * 3, axis=-1)
+    else:
+        raise ValueError(
+            f"Unsupported image format. Trying to convert from {img_channels} channels to "
+            f"{channels} channels."
+        )
+    return img
