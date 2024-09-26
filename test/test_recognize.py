@@ -27,7 +27,6 @@ def assertFileDoesNotContain(fn, text, msg=""):
         assert text not in f.read(), msg
 
 
-
 def test_recognize(workspace_aufklaerung_binarized, caplog):
     caplog.set_level(logging.WARNING)
     ws = workspace_aufklaerung_binarized['workspace']
@@ -63,7 +62,7 @@ def test_recognize(workspace_aufklaerung_binarized, caplog):
     assert "\n".join(text1_out) != "\n".join(text1), "result is suspiciously identical to GT"
 
 
-def test_recognize_should_warn_if_given_rgb_image_and_single_channel_model(
+def test_recognize_rgb(
     workspace_aufklaerung, caplog
 ):
     caplog.set_level(logging.WARNING)
@@ -79,7 +78,7 @@ def test_recognize_should_warn_if_given_rgb_image_and_single_channel_model(
     assert len(interesting_log_messages) > 10  # For every line!
 
 
-def test_word_segmentation(workspace_aufklaerung_binarized):
+def test_words(workspace_aufklaerung_binarized):
     run_processor(
         CalamariRecognize,
         input_file_grp="OCR-D-GT-WORD",

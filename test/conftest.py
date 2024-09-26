@@ -7,7 +7,7 @@ from ocrd_utils import pushd_popd, disableLogging, initLogging, setOverrideLogLe
 
 from .assets import assets
 
-CONFIGS = ['', 'pageparallel', 'metscache', 'pageparallel+metscache']
+CONFIGS = ['', 'metsserver+metscache', 'pageparallel', 'pageparallel+metscache']
 
 @pytest.fixture(params=CONFIGS)
 def workspace(tmpdir, pytestconfig, request):
@@ -26,6 +26,7 @@ def workspace(tmpdir, pytestconfig, request):
             if 'pageparallel' in request.param:
                 config.OCRD_MAX_PARALLEL_PAGES = 4
                 print("enabled page-parallel processing")
+            if 'pageparallel' in request.param or 'metsserver' in request.param:
                 def _start_mets_server(*args, **kwargs):
                     print("running with METS server")
                     server = OcrdMetsServer(*args, **kwargs)
