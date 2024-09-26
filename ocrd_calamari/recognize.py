@@ -61,11 +61,12 @@ class CalamariRecognize(Processor):
             silent=True,
             progress_bar=False,
             # TODO: expose device parameter
-            device=DeviceConfigParams(gpus=[0], dist_strategy=DistributionStrategy.CENTRAL_STORAGE),
+            device=DeviceConfigParams(gpus=[0]), #dist_strategy=DistributionStrategy.CENTRAL_STORAGE),
             pipeline=DataPipelineParams(
                 batch_size=BATCH_SIZE,
                 # Number of processes for data loading.
                 num_processes=4,
+                use_shared_memory=True,
                 # group lines with similar lengths to reduce need for padding
                 # and optimally utilise batch size;
                 bucket_boundaries=GROUP_BOUNDS,
@@ -84,7 +85,7 @@ class CalamariRecognize(Processor):
             predictor_params=pred_params,
         )
         #self.predictor.data.params.pre_proc.run_parallel = False
-        #self.predictor.data.params.post_proc.run_parallel = False
+        self.predictor.data.params.post_proc.run_parallel = False
         def element_length_fn(x):
             return x["img_len"]
         self.predictor.data.element_length_fn=lambda: element_length_fn
