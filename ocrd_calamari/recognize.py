@@ -94,12 +94,13 @@ class CalamariRecognize(Processor):
 
     def predict_raw(self, images, lines, page_id=""):
         # for instrumentation, reimplement raw data pipeline:
-        #from tfaip.data.pipeline.datagenerator import DataGenerator
         from tfaip import PipelineMode, Sample
-        from tfaip.data.pipeline.datapipeline import RawDataPipeline
         from tfaip.data.databaseparams import DataGeneratorParams
+        from tfaip.data.pipeline.datapipeline import RawDataPipeline
+        # from tfaip.data.pipeline.datapipeline import DataPipeline
+        # from tfaip.data.pipeline.datagenerator import DataGenerator
         # from tfaip.data.pipeline.runningdatapipeline import InputSamplesGenerator, _wrap_dataset
-        #from PIL import Image
+        # from PIL import Image
         # class MyInputSamplesGenerator(InputSamplesGenerator):
         #     def as_dataset(self, tf_dataset_generator):
         #         def generator():
@@ -133,19 +134,20 @@ class CalamariRecognize(Processor):
         #             return Sample(inputs=image, meta={"id": line.id})
         #         return map(to_sample, zip(images, lines))
         # class RawDataPipeline(DataPipeline):
-            # def create_data_generator(self):
-            #     return RawDataGenerator(mode=self.mode, params=self.generator_params)
-            # def input_dataset_with_len(self, auto_repeat=None):
-            #     gen = self.generate_input_samples(auto_repeat=auto_repeat)
-            #     # gen = MyInputSamplesGenerator(
-            #     #     self._input_processors,
-            #     #     self.data,
-            #     #     self.create_data_generator(),
-            #     #     self.pipeline_params,
-            #     #     self.mode,
-            #     #     auto_repeat
-            #     # )
-            #     return gen.as_dataset(self._create_tf_dataset_generator()), len(gen)
+        #     def create_data_generator(self):
+        #         return RawDataGenerator(mode=self.mode, params=self.generator_params)
+        #     def input_dataset_with_len(self, auto_repeat=None):
+        #         #gen = self.generate_input_samples(auto_repeat=auto_repeat)
+        #         gen = MyInputSamplesGenerator(
+        #             self._input_processors,
+        #             self.data,
+        #             self.create_data_generator(),
+        #             self.pipeline_params,
+        #             self.mode,
+        #             auto_repeat
+        #         )
+        #         return gen.as_dataset(self._create_tf_dataset_generator()), len(gen)
+        # pipeline = RawDataPipeline(self.predictor.params.pipeline, self.predictor._data, DataGeneratorParams())
         # use tfaip's RawDataPipeline without instrumentation
         assert len(lines) == len(images)
         self.logger.debug("predicting %d images for page '%s'", len(images), page_id)
@@ -175,8 +177,21 @@ class CalamariRecognize(Processor):
 
         # run in a background thread so GPU parts can be interleaved with CPU pre-/post-processing across pages
         self.executor = ThreadPoolExecutor(
-            max_workers=1, thread_name_prefix='bgtask_calamari', initializer=self.setup_calamari
+            # only 1 (exclusive Tensoflow session)
+            max_workers=1,
+            thread_name_prefix='bgtask_calamari',
+            # cannot just run initializer in parallel to processing,
+            # because pages will need to know self.network_input_channels already
+            #initializer=self.setup_calamari
         )
+        self.executor.submit(self.setup_calamari).result()
+
+    def shutdown(self):
+        if getattr(self, 'predictor', None):
+            del self.predictor
+        if getattr(self, 'executor', None):
+            self.executor.shutdown()
+            del self.executor
 
     def process_page_pcgts(self, *input_pcgts: Optional[OcrdPage], page_id: Optional[str] = None) -> OcrdPageResult:
         """
