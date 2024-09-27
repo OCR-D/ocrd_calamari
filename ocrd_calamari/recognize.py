@@ -45,15 +45,19 @@ from ocrd_calamari.config import OCRD_TOOL
 TOOL = "ocrd-calamari-recognize"
 
 BATCH_SIZE = 64
-if not hasattr(itertools, 'batched'):
-    def batched(iterable, n):
-        # batched('ABCDEFG', 3) → ABC DEF G
-        if n < 1:
-            raise ValueError('n must be at least one')
-        iterator = iter(iterable)
-        while batch := tuple(itertools.islice(iterator, n)):
+def batched(iterable, n):
+    # batched('ABCDEFG', 3) → ABC DEF G
+    if n < 1:
+        raise ValueError('n must be at least one')
+    iterator = iter(iterable)
+    while batch := tuple(itertools.islice(iterator, n)):
+        # implement poor man's batch bucketing to avoid OOM:
+        maxlen = max(image.shape[1] for image in batch)
+        if maxlen * n > 32000 and n > 1:
+            yield from batched(batch, n//2)
+        else:
             yield batch
-    itertools.batched = batched
+itertools.batched = batched
 
 class CalamariRecognize(Processor):
     def __init__(self, *args, **kwargs):
