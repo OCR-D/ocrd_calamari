@@ -56,12 +56,22 @@ class CalamariRecognize(Processor):
         from tfaip import DeviceConfigParams
         from tfaip.device.device_config import DistributionStrategy
         tf_disable_interactive_logs()
+        import tensorflow as tf
+        # unfortunately, tfaip device selector is mandatory and does not provide auto-detection
+        if self.parameter['device'] < 0:
+            gpus = []
+            self.logger.debug("running on CPU")
+        elif self.parameter['device'] < len(tf.config.list_physical_devices("GPU")):
+            gpus = [self.parameter['device']]
+            self.logger.info("running on selected GPU device cuda:%d", self.parameter['device'])
+        else:
+            gpus = []
+            self.logger.warning("running on CPU because selected GPU device cuda:%d is not available", self.parameter['device'])
         # load model
         pred_params = PredictorParams(
             silent=True,
             progress_bar=False,
-            # TODO: expose device parameter
-            device=DeviceConfigParams(gpus=[0]), #dist_strategy=DistributionStrategy.CENTRAL_STORAGE),
+            device=DeviceConfigParams(gpus=gpus), #dist_strategy=DistributionStrategy.CENTRAL_STORAGE),
             pipeline=DataPipelineParams(
                 batch_size=BATCH_SIZE,
                 # Number of processes for data loading.
