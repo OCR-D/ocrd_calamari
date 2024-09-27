@@ -5,7 +5,9 @@ PYTHON = python3
 # we must isolate tests by forking because TF will never free CUDA memory
 # and we load the model several times (tests+parameterized):
 PYTEST_ARGS = -W 'ignore::DeprecationWarning' -W 'ignore::FutureWarning' --isolate
-MODEL = qurator-gt4histocr-1.0
+# not usable with Calamari 2 ATM - see Calamari#362
+#MODEL = qurator-gt4histocr-1.0
+MODEL = deep3_fraktur19
 EXAMPLE = actevedef_718448162.first-page+binarization+segmentation
 
 # BEGIN-EVAL makefile-parser --make-help Makefile
