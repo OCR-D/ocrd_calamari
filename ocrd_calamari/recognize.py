@@ -45,7 +45,8 @@ from ocrd_calamari.config import OCRD_TOOL
 TOOL = "ocrd-calamari-recognize"
 
 BATCH_SIZE = 64
-def batched(iterable, n):
+
+def batched_length_limited(iterable, n, limit=32000):
     # batched('ABCDEFG', 3) → ABC DEF G
     if n < 1:
         raise ValueError('n must be at least one')
@@ -53,11 +54,10 @@ def batched(iterable, n):
     while batch := tuple(itertools.islice(iterator, n)):
         # implement poor man's batch bucketing to avoid OOM:
         maxlen = max(image.shape[1] for image in batch)
-        if maxlen * n > 32000 and n > 1:
-            yield from batched(batch, n//2)
+        if maxlen * n > limit and n > 1:
+            yield from batched_length_limited(batch, n//2)
         else:
             yield batch
-itertools.batched = batched
 
 class CalamariRecognize(Processor):
     def __init__(self, *args, **kwargs):
@@ -195,7 +195,7 @@ class CalamariRecognize(Processor):
             # avoid too large a batch size (causing OOM on CPU or GPU)
             fun = lambda x: self.predictor.predict_raw(x, progress_bar=False)
             results = itertools.chain.from_iterable(
-                map(fun, itertools.batched(images, BATCH_SIZE)))
+                map(fun, batched_length_limited(images, BATCH_SIZE)))
 
             for line, line_coords, raw_results in zip(lines, coords, results):
                 for i, p in enumerate(raw_results):
