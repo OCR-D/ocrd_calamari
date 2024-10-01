@@ -57,7 +57,7 @@
           "version_range": ">= 1.0.0, < 2.0.0"
         },
         {
-          "url": "https://github.com/Calamari-OCR/calamari_models/releases/download/2.1/antiqua_historical.zip",
+          "url": "https://github.com/Calamari-OCR/calamari_models/releases/download/2.2/antiqua_historical.zip",
           "type": "archive",
           "name": "antiqua_historical",
           "path_in_archive": "antiqua_historical",
@@ -66,7 +66,7 @@
           "version_range": ">= 2.0.0"
         },
         {
-          "url": "https://github.com/Calamari-OCR/calamari_models/releases/download/2.1/antiqua_historical_ligs.zip",
+          "url": "https://github.com/Calamari-OCR/calamari_models/releases/download/2.2/antiqua_historical_ligs.zip",
           "type": "archive",
           "name": "antiqua_historical_ligs",
           "path_in_archive": "antiqua_historical_ligs",
@@ -75,7 +75,7 @@
           "version_range": ">= 2.0.0"
         },
         {
-          "url": "https://github.com/Calamari-OCR/calamari_models/releases/download/2.1/fraktur_19th_century.zip",
+          "url": "https://github.com/Calamari-OCR/calamari_models/releases/download/2.2/fraktur_19th_century.zip",
           "type": "archive",
           "name": "fraktur_19th_century",
           "path_in_archive": "fraktur_19th_century",
@@ -84,7 +84,7 @@
           "version_range": ">= 2.0.0"
         },
         {
-          "url": "https://github.com/Calamari-OCR/calamari_models/releases/download/2.1/fraktur_historical.zip",
+          "url": "https://github.com/Calamari-OCR/calamari_models/releases/download/2.2/fraktur_historical.zip",
           "type": "archive",
           "name": "fraktur_historical",
           "path_in_archive": "fraktur_historical",
@@ -93,7 +93,7 @@
           "version_range": ">= 2.0.0"
         },
         {
-          "url": "https://github.com/Calamari-OCR/calamari_models/releases/download/2.1/fraktur_historical_ligs.zip",
+          "url": "https://github.com/Calamari-OCR/calamari_models/releases/download/2.2/fraktur_historical_ligs.zip",
           "type": "archive",
           "name": "fraktur_historical_ligs",
           "path_in_archive": "fraktur_historical_ligs",
@@ -102,7 +102,7 @@
           "version_range": ">= 2.0.0"
         },
         {
-          "url": "https://github.com/Calamari-OCR/calamari_models/releases/download/2.1/gt4histocr.zip",
+          "url": "https://github.com/Calamari-OCR/calamari_models/releases/download/2.2/gt4histocr.zip",
           "type": "archive",
           "name": "gt4histocr",
           "path_in_archive": "gt4histocr",
@@ -111,7 +111,7 @@
           "version_range": ">= 2.0.0"
         },
         {
-          "url": "https://github.com/Calamari-OCR/calamari_models/releases/download/2.1/historical_french.zip",
+          "url": "https://github.com/Calamari-OCR/calamari_models/releases/download/2.2/historical_french.zip",
           "type": "archive",
           "name": "historical_french",
           "path_in_archive": "historical_french",
@@ -120,7 +120,7 @@
           "version_range": ">= 2.0.0"
         },
         {
-          "url": "https://github.com/Calamari-OCR/calamari_models/releases/download/2.1/idiotikon.zip",
+          "url": "https://github.com/Calamari-OCR/calamari_models/releases/download/2.2/idiotikon.zip",
           "type": "archive",
           "name": "idiotikon",
           "path_in_archive": "idiotikon",
@@ -129,7 +129,7 @@
           "version_range": ">= 2.0.0"
         },
         {
-          "url": "https://github.com/Calamari-OCR/calamari_models/releases/download/2.1/uw3-modern-english.zip",
+          "url": "https://github.com/Calamari-OCR/calamari_models/releases/download/2.2/uw3-modern-english.zip",
           "type": "archive",
           "name": "uw3-modern-english",
           "path_in_archive": "uw3-modern-english",
