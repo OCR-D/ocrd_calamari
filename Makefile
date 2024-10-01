@@ -2,8 +2,12 @@ export  # export variables to subshells
 PIP_INSTALL = pip3 install
 GIT_CLONE = git clone
 PYTHON = python3
-PYTEST_ARGS = -W 'ignore::DeprecationWarning' -W 'ignore::FutureWarning'
-MODEL = qurator-gt4histocr-1.0
+# we must isolate tests by forking because TF will never free CUDA memory
+# and we load the model several times (tests+parameterized):
+PYTEST_ARGS = -W 'ignore::DeprecationWarning' -W 'ignore::FutureWarning' --isolate
+# not usable with Calamari 2 ATM - see Calamari#362
+#MODEL = qurator-gt4histocr-1.0
+MODEL = deep3_fraktur19
 EXAMPLE = actevedef_718448162.first-page+binarization+segmentation
 
 # BEGIN-EVAL makefile-parser --make-help Makefile
@@ -40,8 +44,6 @@ install:
 
 $(MODEL):
 	ocrd resmgr download ocrd-calamari-recognize $@
-	# Workaround, see #91 https://github.com/OCR-D/ocrd_calamari/issues/91
-	fix-calamari1-model ~/.local/share/ocrd-resources/ocrd-calamari-recognize/$@
 
 # Download example data (for the README)
 example: $(EXAMPLE)
@@ -84,7 +86,7 @@ assets-clean:
 # Run unit tests
 test: test/assets $(MODEL)
 	# declare -p HTTP_PROXY
-	$(PYTHON) -m pytest --continue-on-collection-errors test $(PYTEST_ARGS)
+	$(PYTHON) -m pytest --continue-on-collection-errors --durations=0 test $(PYTEST_ARGS)
 
 # Run unit tests and determine test coverage
 coverage: test/assets $(MODEL)
