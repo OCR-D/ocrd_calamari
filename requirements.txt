@@ -1,6 +1,5 @@
-tensorflow >= 2.5.0, < 2.16
 numpy
-calamari-ocr >= 2.2.0
+calamari-ocr >= 2.3.0
 setuptools >= 41.0.0  # tensorboard depends on this, but why do we get an error at runtime?
 click
 ocrd >= 3.0.0b5
