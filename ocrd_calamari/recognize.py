@@ -1,9 +1,13 @@
 from __future__ import absolute_import
 
 from typing import Optional
+from functools import cached_property
 import itertools
 from glob import glob
-from concurrent.futures import ThreadPoolExecutor
+import atexit
+from uuid import uuid4
+import queue
+import multiprocessing as mp
 
 import numpy as np
 import cv2 as cv
@@ -46,136 +50,6 @@ class CalamariRecognize(Processor):
               f"ocrd/core {OCRD_VERSION}"
         )
 
-    def setup_calamari(self):
-        """
-        Set up the model prior to processing.
-        """
-        from calamari_ocr.ocr.predict.predictor import MultiPredictor, PredictorParams
-        from calamari_ocr.ocr.voting import VoterParams, VoterType
-        from tfaip.data.databaseparams import DataPipelineParams
-        from tfaip import DeviceConfigParams
-        from tfaip.device.device_config import DistributionStrategy
-        tf_disable_interactive_logs()
-        import tensorflow as tf
-        # unfortunately, tfaip device selector is mandatory and does not provide auto-detection
-        if self.parameter['device'] < 0:
-            gpus = []
-            self.logger.debug("running on CPU")
-        elif self.parameter['device'] < len(tf.config.list_physical_devices("GPU")):
-            gpus = [self.parameter['device']]
-            self.logger.info("running on selected GPU device cuda:%d", self.parameter['device'])
-        else:
-            gpus = []
-            self.logger.warning("running on CPU because selected GPU device cuda:%d is not available", self.parameter['device'])
-        # load model
-        pred_params = PredictorParams(
-            silent=True,
-            progress_bar=False,
-            device=DeviceConfigParams(gpus=gpus), #dist_strategy=DistributionStrategy.CENTRAL_STORAGE),
-            pipeline=DataPipelineParams(
-                batch_size=BATCH_SIZE,
-                # Number of processes for data loading.
-                num_processes=4,
-                use_shared_memory=True,
-                # group lines with similar lengths to reduce need for padding
-                # and optimally utilise batch size;
-                bucket_boundaries=GROUP_BOUNDS,
-                bucket_batch_sizes=BATCH_GROUPS,
-            )
-        )
-        voter_params = VoterParams()
-        voter_params.type = VoterType(self.parameter["voter"])
-
-        resolved = self.resolve_resource(self.parameter["checkpoint_dir"])
-        checkpoints = glob("%s/*.ckpt.json" % resolved)
-        self.logger.info("loading %d checkpoints", len(checkpoints))
-        self.predictor = MultiPredictor.from_paths(
-            checkpoints,
-            voter_params=voter_params,
-            predictor_params=pred_params,
-        )
-        #self.predictor.data.params.pre_proc.run_parallel = False
-        self.predictor.data.params.post_proc.run_parallel = False
-        def element_length_fn(x):
-            return x["img_len"]
-        self.predictor.data.element_length_fn=lambda: element_length_fn
-
-        self.network_input_channels = self.predictor.data.params.input_channels
-        for preproc in self.predictor.data.params.pre_proc.processors:
-            self.logger.info("preprocessor: %s", str(preproc))
-
-    def predict_raw(self, images, lines, page_id=""):
-        # for instrumentation, reimplement raw data pipeline:
-        from tfaip import PipelineMode, Sample
-        from tfaip.data.databaseparams import DataGeneratorParams
-        from tfaip.data.pipeline.datapipeline import RawDataPipeline
-        # from tfaip.data.pipeline.datapipeline import DataPipeline
-        # from tfaip.data.pipeline.datagenerator import DataGenerator
-        # from tfaip.data.pipeline.runningdatapipeline import InputSamplesGenerator, _wrap_dataset
-        # from PIL import Image
-        # class MyInputSamplesGenerator(InputSamplesGenerator):
-        #     def as_dataset(self, tf_dataset_generator):
-        #         def generator():
-        #             with self as samples:
-        #                 # now instrument the processors in the running pipeline
-        #                 # for pipeline in self.running_pipeline.pipeline:
-        #                 #     print("pipeline: %s" % str(pipeline))
-        #                 #     proc = pipeline.create_processor_fn()
-        #                 #     for processor in proc.processors:
-        #                 #         print("next processor: %s" % repr(processor))
-        #                 for s in samples:
-        #                     #Image.fromarray(s.inputs["img"].T.squeeze(), mode="L").save(s.meta["id"] + ".png")
-        #                     yield s
-        #         dataset = tf_dataset_generator.create(generator, self.data_generator.yields_batches())
-        #         def print_fn(*x):
-        #             import tensorflow as tf
-        #             tf.print(tf.shape(x[0]["img"]))
-        #             return x
-        #         #dataset = dataset.map(print_fn)
-        #         dataset = _wrap_dataset(
-        #             self.mode, dataset, self.pipeline_params, self.data, self.data_generator.yields_batches())
-        #         #dataset = dataset.map(print_fn)
-        #         return dataset
-        # class RawDataGenerator(DataGenerator):
-        #     def __len__(self):
-        #         return len(images)
-        #     def generate(self):
-        #         #return map(lambda x: Sample(inputs=x, meta={}), images)
-        #         def to_sample(x):
-        #             image, line = x
-        #             return Sample(inputs=image, meta={"id": line.id})
-        #         return map(to_sample, zip(images, lines))
-        # class RawDataPipeline(DataPipeline):
-        #     def create_data_generator(self):
-        #         return RawDataGenerator(mode=self.mode, params=self.generator_params)
-        #     def input_dataset_with_len(self, auto_repeat=None):
-        #         #gen = self.generate_input_samples(auto_repeat=auto_repeat)
-        #         gen = MyInputSamplesGenerator(
-        #             self._input_processors,
-        #             self.data,
-        #             self.create_data_generator(),
-        #             self.pipeline_params,
-        #             self.mode,
-        #             auto_repeat
-        #         )
-        #         return gen.as_dataset(self._create_tf_dataset_generator()), len(gen)
-        # pipeline = RawDataPipeline(self.predictor.params.pipeline, self.predictor._data, DataGeneratorParams())
-        # use tfaip's RawDataPipeline without instrumentation
-        assert len(lines) == len(images)
-        self.logger.debug("predicting %d images for page '%s'", len(images), page_id)
-        pipeline = RawDataPipeline(
-            [Sample(inputs=image, meta={"id": line.id})
-                   for image, line in zip(images, lines)],
-            self.predictor.params.pipeline,
-            self.predictor._data,
-            DataGeneratorParams(),
-        )
-        # list() - exhaust result generator to stay thread-safe:
-        predictions = list(self.predictor.predict_pipeline(pipeline))
-        self.logger.debug("predicted %d images for page '%s'", len(predictions), page_id)
-        assert len(predictions) == len(images)
-        return predictions
-
     def setup(self):
         """
         Set up the model prior to processing.
@@ -187,23 +61,33 @@ class CalamariRecognize(Processor):
         #                  'grayscale_normalized')
         self.features = ""
 
-        # run in a background thread so GPU parts can be interleaved with CPU pre-/post-processing across pages
-        self.executor = ThreadPoolExecutor(
-            # only 1 (exclusive Tensoflow session)
-            max_workers=1,
-            thread_name_prefix='bgtask_calamari',
-            # cannot just run initializer in parallel to processing,
-            # because pages will need to know self.network_input_channels already
-            #initializer=self.setup_calamari
+        # Run in a background thread so GPU parts can be interleaved with CPU pre-/post-processing across pages.
+        # We cannot use a ProcessPoolExecutor (or even ThreadPoolExecutor) for this,
+        # because that relies on threads to set up IPC, but when process_workspace
+        # starts forking/spawning subprocesses, these threads will break.
+        # (And we cannot use multithreading for process_workspace either, because
+        # Python's GIL would not allow true multiscalar compuation in the first place.)
+        # So instead, here we setup our own subprocess+queueing solution.
+        self.predictor = CalamariPredictor(
+                self.logger, # FIXME synchronize logger, too
+                self.parameter['device'],
+                self.parameter["voter"],
+                self.resolve_resource(self.parameter["checkpoint_dir"])
         )
-        self.executor.submit(self.setup_calamari).result()
+
+    @cached_property
+    def network_input_channels(self):
+        # as a special case, this information from the model is needed prior to
+        # prediction, but must be retrieved from the background process as soon as
+        # the model is loaded, so this will block upon first invocation
+        input_channels = self.predictor.get("input_channels")
+        self.logger.debug("model's network_input_channels is %d", input_channels)
+        return input_channels
 
     def shutdown(self):
         if getattr(self, 'predictor', None):
+            self.predictor.shutdown()
             del self.predictor
-        if getattr(self, 'executor', None):
-            self.executor.shutdown()
-            del self.executor
 
     def process_page_pcgts(self, *input_pcgts: Optional[OcrdPage], page_id: Optional[str] = None) -> OcrdPageResult:
         """
@@ -284,14 +168,20 @@ class CalamariRecognize(Processor):
             return OcrdPageResult(pcgts)
 
         lines, coords, images = zip(*lines)
-        # We cannot directly use the predictor, because all page threads must be synchronised
-        # on a single GPU-bound thread.
-        # predictions = self.predictor.predict_raw(images)
-        # Also, we cannot directly use predict_raw, because our pipeline params use bucket batching,
-        # i.e. reordering, so we have to pass in additional metadata for re-identification.
-        # predictions = self.executor.submit(self.predictor.predict_raw, images).result()
-        # See our predict_raw() implementation above.
-        predictions = self.executor.submit(self.predict_raw, images, lines, page_id=page_id).result()
+        # We cannot delegate to predictor.predict_raw directly...
+        #    predictions = self.predictor.predict_raw(images)
+        # ...because for efficiency, all page tasks must be synchronised
+        # on a single GPU-bound subprocess (no more than 1 simulatneous call).
+        # Moreover, we also cannot use predict_raw indirectly...
+        #    taskq.put((page_id, images))
+        #                                                page_id, images = taskq.get()
+        #                                                result = predictor.predict_raw(images)
+        #                                                resultq.put((page_id, result))
+        #    predictions = resultq.get(page_id)
+        # ...because our pipeline params use bucket batching, i.e. reordering,
+        # so we have to pass in additional metadata for re-identification.
+        # Hence our predict_raw() re-implementation in CalamariPredictor.
+        predictions = self.predictor(images, lines, page_id=page_id)
         # Map back predictions to lines via sample metadata
         predict = {prediction.meta["id"]: prediction.outputs for prediction in predictions}
         self.logger.info("Received %d line results for page '%s'", len(predict.keys()), page_id)
@@ -475,6 +365,200 @@ class CalamariRecognize(Processor):
 
         _page_update_higher_textequiv_levels("line", pcgts)
         return OcrdPageResult(pcgts)
+
+class CalamariPredictor:
+    class QueueStop:
+        pass
+    class QueueGetChannels:
+        pass
+
+    class PredictWorker(mp.Process):
+        def __init__(self, logger, device, voter, checkpoint_dir, taskq, resultq):
+            self.logger = logger
+            self.device = device
+            self.voter = voter
+            self.checkpoint_dir = checkpoint_dir
+            self.taskq = taskq
+            self.resultq = resultq
+            super().__init__()
+        def run(self):
+            predictor = self.setup()
+            while True:
+                task = self.taskq.get()
+                if task == CalamariPredictor.QueueStop:
+                    break
+                elif task == CalamariPredictor.QueueGetChannels:
+                    self.resultq.put(("input_channels", predictor.data.params.input_channels))
+                    continue
+                page_id, images, lines = task
+                result = self.predict_raw(predictor, images, lines, page_id=page_id)
+                self.resultq.put((page_id, result))
+        def setup(self):
+            """
+            Set up the model prior to processing.
+            """
+            from calamari_ocr.ocr.predict.predictor import MultiPredictor, PredictorParams
+            from calamari_ocr.ocr.voting import VoterParams, VoterType
+            from tfaip.data.databaseparams import DataPipelineParams
+            from tfaip import DeviceConfigParams
+            from tfaip.device.device_config import DistributionStrategy
+            tf_disable_interactive_logs()
+            import tensorflow as tf
+            # unfortunately, tfaip device selector is mandatory and does not provide auto-detection
+            if self.device < 0:
+                gpus = []
+                self.logger.debug("running on CPU")
+            elif self.device < len(tf.config.list_physical_devices("GPU")):
+                gpus = [self.device]
+                self.logger.info("running on selected GPU device cuda:%d", self.device)
+            else:
+                gpus = []
+                self.logger.warning("running on CPU because selected GPU device cuda:%d is not available", self.device)
+            # load model
+            pred_params = PredictorParams(
+                silent=True,
+                progress_bar=False,
+                device=DeviceConfigParams(gpus=gpus), #dist_strategy=DistributionStrategy.CENTRAL_STORAGE),
+                pipeline=DataPipelineParams(
+                    batch_size=BATCH_SIZE,
+                    # Number of processes for data loading.
+                    num_processes=4,
+                    use_shared_memory=True,
+                    # group lines with similar lengths to reduce need for padding
+                    # and optimally utilise batch size;
+                    bucket_boundaries=GROUP_BOUNDS,
+                    bucket_batch_sizes=BATCH_GROUPS,
+                )
+            )
+            voter_params = VoterParams()
+            voter_params.type = VoterType(self.voter)
+            #
+            checkpoints = glob("%s/*.ckpt.json" % self.checkpoint_dir)
+            self.logger.info("loading %d checkpoints", len(checkpoints))
+            predictor = MultiPredictor.from_paths(
+                checkpoints,
+                voter_params=voter_params,
+                predictor_params=pred_params,
+            )
+            #predictor.data.params.pre_proc.run_parallel = False
+            #predictor.data.params.post_proc.run_parallel = False
+            def element_length_fn(x):
+                return x["img_len"]
+            predictor.data.element_length_fn=lambda: element_length_fn
+            # for preproc in predictor.data.params.pre_proc.processors:
+            #     self.logger.info("preprocessor: %s", str(preproc))
+            return predictor
+        def predict_raw(self, predictor, images, lines, page_id=""):
+            # for instrumentation, reimplement raw data pipeline:
+            from tfaip import PipelineMode, Sample
+            from tfaip.data.databaseparams import DataGeneratorParams
+            from tfaip.data.pipeline.datapipeline import RawDataPipeline
+            # from tfaip.data.pipeline.datapipeline import DataPipeline
+            # from tfaip.data.pipeline.datagenerator import DataGenerator
+            # from tfaip.data.pipeline.runningdatapipeline import InputSamplesGenerator, _wrap_dataset
+            # from PIL import Image
+            # class MyInputSamplesGenerator(InputSamplesGenerator):
+            #     def as_dataset(self, tf_dataset_generator):
+            #         def generator():
+            #             with self as samples:
+            #                 # now instrument the processors in the running pipeline
+            #                 # for pipeline in self.running_pipeline.pipeline:
+            #                 #     print("pipeline: %s" % str(pipeline))
+            #                 #     proc = pipeline.create_processor_fn()
+            #                 #     for processor in proc.processors:
+            #                 #         print("next processor: %s" % repr(processor))
+            #                 for s in samples:
+            #                     #Image.fromarray(s.inputs["img"].T.squeeze(), mode="L").save(s.meta["id"] + ".png")
+            #                     yield s
+            #         dataset = tf_dataset_generator.create(generator, self.data_generator.yields_batches())
+            #         def print_fn(*x):
+            #             import tensorflow as tf
+            #             tf.print(tf.shape(x[0]["img"]))
+            #             return x
+            #         #dataset = dataset.map(print_fn)
+            #         dataset = _wrap_dataset(
+            #             self.mode, dataset, self.pipeline_params, self.data, self.data_generator.yields_batches())
+            #         #dataset = dataset.map(print_fn)
+            #         return dataset
+            # class RawDataGenerator(DataGenerator):
+            #     def __len__(self):
+            #         return len(images)
+            #     def generate(self):
+            #         #return map(lambda x: Sample(inputs=x, meta={}), images)
+            #         def to_sample(x):
+            #             image, line = x
+            #             return Sample(inputs=image, meta={"id": line.id})
+            #         return map(to_sample, zip(images, lines))
+            # class RawDataPipeline(DataPipeline):
+            #     def create_data_generator(self):
+            #         return RawDataGenerator(mode=self.mode, params=self.generator_params)
+            #     def input_dataset_with_len(self, auto_repeat=None):
+            #         #gen = self.generate_input_samples(auto_repeat=auto_repeat)
+            #         gen = MyInputSamplesGenerator(
+            #             self._input_processors,
+            #             self.data,
+            #             self.create_data_generator(),
+            #             self.pipeline_params,
+            #             self.mode,
+            #             auto_repeat
+            #         )
+            #         return gen.as_dataset(self._create_tf_dataset_generator()), len(gen)
+            # pipeline = RawDataPipeline(predictor.params.pipeline, predictor._data, DataGeneratorParams())
+            # use tfaip's RawDataPipeline without instrumentation
+            assert len(lines) == len(images)
+            self.logger.info("predicting %d images for page '%s'", len(images), page_id)
+            pipeline = RawDataPipeline(
+                [Sample(inputs=image, meta={"id": line.id})
+                       for image, line in zip(images, lines)],
+                predictor.params.pipeline,
+                predictor._data,
+                DataGeneratorParams(),
+            )
+            # list() - exhaust result generator to stay thread-safe:
+            predictions = list(predictor.predict_pipeline(pipeline))
+            self.logger.debug("predicted %d images for page '%s'", len(predictions), page_id)
+            assert len(predictions) == len(images)
+            return predictions
+
+    def __init__(self, logger, device, voter, checkpoint_dir):
+        #self.logger = logger
+        import logging
+        self.logger = logging.getLogger("ocrd.processor.CalamariPredictor")
+        self.taskq = mp.Queue(maxsize=3)
+        self.resultq = mp.Queue(maxsize=3)
+        self.workers = [
+            CalamariPredictor.PredictWorker(self.logger, device, voter, checkpoint_dir,
+                                            self.taskq, self.resultq)
+        ]
+        self.results = {}
+        for p in self.workers:
+            p.start()
+        self.taskq.put(CalamariPredictor.QueueGetChannels)
+        atexit.register(self.shutdown)
+
+    @cached_property
+    def network_input_channels(self):
+        return self.get("input_channels")
+
+    def __call__(self, images, lines, page_id=None):
+        if page_id is None:
+            page_id = uuid4()
+        self.taskq.put((page_id, images, lines))
+        return self.get(page_id)
+
+    def get(self, page_id):
+        if page_id in self.results:
+            return self.results.pop(page_id)
+        while True:
+            id_, result = self.resultq.get()
+            if id_ == page_id:
+                return result
+            self.results[id_] = result
+
+    def shutdown(self):
+        for _ in self.workers:
+            self.taskq.put(CalamariPredictor.QueueStop)
+
 
 # TODO: This is a copy of ocrd_tesserocr's function, and should probably be moved to a
 #       ocrd lib
