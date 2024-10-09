@@ -8,6 +8,7 @@ import atexit
 from uuid import uuid4
 import queue
 import multiprocessing as mp
+import logging
 
 import numpy as np
 import cv2 as cv
@@ -24,6 +25,7 @@ from ocrd_utils import (
     points_from_polygon,
     polygon_from_x0y0x1y1,
     tf_disable_interactive_logs,
+    initLogging
 )
 
 # ruff: isort: on
@@ -69,7 +71,6 @@ class CalamariRecognize(Processor):
         # Python's GIL would not allow true multiscalar compuation in the first place.)
         # So instead, here we setup our own subprocess+queueing solution.
         self.predictor = CalamariPredictor(
-                self.logger, # FIXME synchronize logger, too
                 self.parameter['device'],
                 self.parameter["voter"],
                 self.resolve_resource(self.parameter["checkpoint_dir"])
@@ -80,7 +81,7 @@ class CalamariRecognize(Processor):
         # as a special case, this information from the model is needed prior to
         # prediction, but must be retrieved from the background process as soon as
         # the model is loaded, so this will block upon first invocation
-        input_channels = self.predictor.get("input_channels")
+        input_channels = self.predictor.network_input_channels
         self.logger.debug("model's network_input_channels is %d", input_channels)
         return input_channels
 
@@ -161,13 +162,13 @@ class CalamariRecognize(Processor):
                         region.id,
                     )
                     continue
-                lines.append((line, line_coords, line_img))
+                lines.append((line.id, line, line_coords, line_img))
 
         if not len(lines):
             self.logger.warning("No text lines on page '%s'", page_id)
             return OcrdPageResult(pcgts)
 
-        lines, coords, images = zip(*lines)
+        ids, lines, coords, images = zip(*lines)
         # We cannot delegate to predictor.predict_raw directly...
         #    predictions = self.predictor.predict_raw(images)
         # ...because for efficiency, all page tasks must be synchronised
@@ -181,7 +182,7 @@ class CalamariRecognize(Processor):
         # ...because our pipeline params use bucket batching, i.e. reordering,
         # so we have to pass in additional metadata for re-identification.
         # Hence our predict_raw() re-implementation in CalamariPredictor.
-        predictions = self.predictor(images, lines, page_id=page_id)
+        predictions = self.predictor(images, ids, page_id=page_id)
         # Map back predictions to lines via sample metadata
         predict = {prediction.meta["id"]: prediction.outputs for prediction in predictions}
         self.logger.info("Received %d line results for page '%s'", len(predict.keys()), page_id)
@@ -374,7 +375,7 @@ class CalamariPredictor:
 
     class PredictWorker(mp.Process):
         def __init__(self, logger, device, voter, checkpoint_dir, taskq, resultq):
-            self.logger = logger
+            self.logger = logger # FIXME: synchronize loggers, too
             self.device = device
             self.voter = voter
             self.checkpoint_dir = checkpoint_dir
@@ -382,6 +383,8 @@ class CalamariPredictor:
             self.resultq = resultq
             super().__init__()
         def run(self):
+            initLogging()
+            tf_disable_interactive_logs()
             predictor = self.setup()
             while True:
                 task = self.taskq.get()
@@ -390,8 +393,8 @@ class CalamariPredictor:
                 elif task == CalamariPredictor.QueueGetChannels:
                     self.resultq.put(("input_channels", predictor.data.params.input_channels))
                     continue
-                page_id, images, lines = task
-                result = self.predict_raw(predictor, images, lines, page_id=page_id)
+                page_id, images, ids = task
+                result = self.predict_raw(predictor, images, ids, page_id=page_id)
                 self.resultq.put((page_id, result))
         def setup(self):
             """
@@ -402,7 +405,6 @@ class CalamariPredictor:
             from tfaip.data.databaseparams import DataPipelineParams
             from tfaip import DeviceConfigParams
             from tfaip.device.device_config import DistributionStrategy
-            tf_disable_interactive_logs()
             import tensorflow as tf
             # unfortunately, tfaip device selector is mandatory and does not provide auto-detection
             if self.device < 0:
@@ -418,7 +420,10 @@ class CalamariPredictor:
             pred_params = PredictorParams(
                 silent=True,
                 progress_bar=False,
-                device=DeviceConfigParams(gpus=gpus), #dist_strategy=DistributionStrategy.CENTRAL_STORAGE),
+                device=DeviceConfigParams(
+                    gpus=gpus,
+                    #dist_strategy=DistributionStrategy.CENTRAL_STORAGE,
+                ),
                 pipeline=DataPipelineParams(
                     batch_size=BATCH_SIZE,
                     # Number of processes for data loading.
@@ -448,7 +453,7 @@ class CalamariPredictor:
             # for preproc in predictor.data.params.pre_proc.processors:
             #     self.logger.info("preprocessor: %s", str(preproc))
             return predictor
-        def predict_raw(self, predictor, images, lines, page_id=""):
+        def predict_raw(self, predictor, images, ids, page_id=""):
             # for instrumentation, reimplement raw data pipeline:
             from tfaip import PipelineMode, Sample
             from tfaip.data.databaseparams import DataGeneratorParams
@@ -488,7 +493,7 @@ class CalamariPredictor:
             #         def to_sample(x):
             #             image, line = x
             #             return Sample(inputs=image, meta={"id": line.id})
-            #         return map(to_sample, zip(images, lines))
+            #         return map(to_sample, zip(images, ids))
             # class RawDataPipeline(DataPipeline):
             #     def create_data_generator(self):
             #         return RawDataGenerator(mode=self.mode, params=self.generator_params)
@@ -505,11 +510,11 @@ class CalamariPredictor:
             #         return gen.as_dataset(self._create_tf_dataset_generator()), len(gen)
             # pipeline = RawDataPipeline(predictor.params.pipeline, predictor._data, DataGeneratorParams())
             # use tfaip's RawDataPipeline without instrumentation
-            assert len(lines) == len(images)
-            self.logger.info("predicting %d images for page '%s'", len(images), page_id)
+            assert len(ids) == len(images)
+            self.logger.debug("predicting %d images for page '%s'", len(images), page_id)
             pipeline = RawDataPipeline(
-                [Sample(inputs=image, meta={"id": line.id})
-                       for image, line in zip(images, lines)],
+                [Sample(inputs=image, meta={"id": id})
+                       for image, id in zip(images, ids)],
                 predictor.params.pipeline,
                 predictor._data,
                 DataGeneratorParams(),
@@ -520,10 +525,9 @@ class CalamariPredictor:
             assert len(predictions) == len(images)
             return predictions
 
-    def __init__(self, logger, device, voter, checkpoint_dir):
-        #self.logger = logger
-        import logging
+    def __init__(self, device, voter, checkpoint_dir):
         self.logger = logging.getLogger("ocrd.processor.CalamariPredictor")
+        #self.logger.setLevel(logging.DEBUG)
         self.taskq = mp.Queue(maxsize=3)
         self.resultq = mp.Queue(maxsize=3)
         self.workers = [
@@ -533,26 +537,36 @@ class CalamariPredictor:
         self.results = {}
         for p in self.workers:
             p.start()
-        self.taskq.put(CalamariPredictor.QueueGetChannels)
         atexit.register(self.shutdown)
 
     @cached_property
     def network_input_channels(self):
+        self.taskq.put(CalamariPredictor.QueueGetChannels)
         return self.get("input_channels")
 
-    def __call__(self, images, lines, page_id=None):
+    def __call__(self, images, ids, page_id=None):
         if page_id is None:
             page_id = uuid4()
-        self.taskq.put((page_id, images, lines))
-        return self.get(page_id)
+        self.taskq.put((page_id, images, ids))
+        self.logger.debug("sent %d images for page '%s'", len(images), page_id)
+        result = self.get(page_id)
+        self.logger.debug("received %d results for page '%s'", len(result), page_id)
+        return result
 
     def get(self, page_id):
+        self.logger.debug("requested results for page '%s'", page_id)
         if page_id in self.results:
+            if page_id == "input_channels":
+                # keep (more than 1 consumer allowed)
+                return self.results["input_channels"]
             return self.results.pop(page_id)
         while True:
+            self.logger.debug("receiving results in search of page '%s'", page_id)
             id_, result = self.resultq.get()
             if id_ == page_id:
+                self.logger.debug("returning results for page '%s'", page_id)
                 return result
+            self.logger.debug("storing results for page '%s'", id_)
             self.results[id_] = result
 
     def shutdown(self):
