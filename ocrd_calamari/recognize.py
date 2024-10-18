@@ -30,6 +30,7 @@ GROUP_BOUNDS = [100, 200, 400, 800, 1600, 3200, 6400]
 BATCH_GROUPS = [max(1, (max(GROUP_BOUNDS) * BATCH_SIZE) // length)
                 for length in GROUP_BOUNDS] + [BATCH_SIZE]
 
+
 class CalamariRecognize(Processor):
     @property
     def executable(self):
@@ -470,7 +471,6 @@ class CalamariRecognize(Processor):
 
                         line.add_Word(word)
                         word_no += 1
-
                     i += word_length
 
         _page_update_higher_textequiv_levels("line", pcgts)
