@@ -514,11 +514,11 @@ class CalamariPredictor:
             #             auto_repeat
             #         )
             #         return gen.as_dataset(self._create_tf_dataset_generator()), len(gen)
-            # pipeline = RawDataPipeline(predictor.params.pipeline, predictor._data, DataGeneratorParams())
+            # input_pipeline = RawDataPipeline(predictor.params.pipeline, predictor._data, DataGeneratorParams())
             # use tfaip's RawDataPipeline without instrumentation
             assert len(ids) == len(images)
             self.logger.debug("predicting %d images for page '%s'", len(images), page_id)
-            pipeline = RawDataPipeline(
+            input_pipeline = RawDataPipeline(
                 [Sample(inputs=image, meta={"id": id})
                        for image, id in zip(images, ids)],
                 predictor.params.pipeline,
@@ -526,7 +526,48 @@ class CalamariPredictor:
                 DataGeneratorParams(),
             )
             # list() - exhaust result generator to stay thread-safe:
-            predictions = list(predictor.predict_pipeline(pipeline))
+            #predictions = list(predictor.predict_pipeline(input_pipeline))
+            from tfaip.predict.predictorbase import data_adapter
+            from tfaip.util.tftyping import sync_to_numpy_or_python_type
+            from tfaip.data.pipeline.processor.params import SequentialProcessorPipelineParams
+            from tfaip.predict.multimodelpostprocessor import MultiModelPostProcessorParams
+            tf_dataset = input_pipeline.input_dataset()
+            #tf_dataset = input_pipeline.generate_input_samples().as_dataset(
+            #    input_pipeline._create_tf_dataset_generator())
+            def predict_dataset(dataset):
+                # we cannot use predictor.model.predict followed by unwrap_batch
+                # directly, because TF now outputs ragged tensors, which must be
+                # converted to_tensor and then to numpy. This is from tfaip's
+                # MultiModelPredictor.predict_pipeline:
+                # dataset = dataset.map(lambda i, m: ((i, m),))
+                # with predictor.model.distribute_strategy.scope():
+                #     # predict_function = predictor.model.make_predict_function()
+                #     data_handler = data_adapter.DataHandler(dataset, distribute=False)
+                #     for _, iterator in data_handler.enumerate_epochs():  # Single epoch.
+                #         with data_handler.catch_stop_iteration():
+                #             for _ in data_handler.steps():
+                #                 r = predict_function(iterator)  # hack to access inputs
+                #                 inputs, outputs, meta = sync_to_numpy_or_python_type(r)
+                #                 # split into single samples
+                #                 for sample in predictor._unwrap_batch(inputs, {}, outputs, meta):
+                #                     yield sample
+                for batch in dataset:
+                    r = predictor.model.predict_on_batch(batch)
+                    inputs, outputs, meta = sync_to_numpy_or_python_type(r)
+                    for sample in predictor._unwrap_batch(inputs, {}, outputs, meta):
+                        yield sample
+            post_processors = [
+                d.get_or_create_pipeline(predictor.params.pipeline, input_pipeline.generator_params).create_output_pipeline()
+                for d in predictor.datas
+            ]
+            post_proc_pipeline = SequentialProcessorPipelineParams(
+                processors=[MultiModelPostProcessorParams(voter=predictor.voter, post_processors=post_processors)],
+                run_parallel=predictor.data.params.post_proc.run_parallel,
+                num_threads=predictor.data.params.post_proc.num_threads,
+                max_tasks_per_process=predictor.data.params.post_proc.max_tasks_per_process,
+            ).create(input_pipeline.pipeline_params, predictor.data.params)
+            predictions = list(map(predictor.voter.finalize_sample,
+                                   post_proc_pipeline.apply(predict_dataset(tf_dataset))))
             self.logger.debug("predicted %d images for page '%s'", len(predictions), page_id)
             assert len(predictions) == len(images)
             return predictions
