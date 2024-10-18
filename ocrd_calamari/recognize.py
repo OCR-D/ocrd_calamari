@@ -30,8 +30,8 @@ from ocrd_utils import (
 
 # ruff: isort: on
 
-BATCH_SIZE = 12
-GROUP_BOUNDS = [100, 200, 400, 800, 1600, 3200, 6400]
+BATCH_SIZE = 3
+GROUP_BOUNDS = [100, 200, 400, 800, 1600, 3200]
 # default tfaip bucket_batch_sizes is buggy (inverse quotient)
 BATCH_GROUPS = [max(1, (max(GROUP_BOUNDS) * BATCH_SIZE) // length)
                 for length in GROUP_BOUNDS] + [BATCH_SIZE]
@@ -428,6 +428,8 @@ class CalamariPredictor:
                 progress_bar=False,
                 device=DeviceConfigParams(
                     gpus=gpus,
+                    soft_device_placement=False,
+                    #gpu_memory=7000, # limit to 7GB (logical, no dynamic growth)
                     #dist_strategy=DistributionStrategy.CENTRAL_STORAGE,
                 ),
                 pipeline=DataPipelineParams(
@@ -456,14 +458,22 @@ class CalamariPredictor:
             def element_length_fn(x):
                 return x["img_len"]
             predictor.data.element_length_fn=lambda: element_length_fn
+            # rewrap voter JoinedModel and compile (to avoid repeating for each page):
+            class WrappedModel(tf.keras.models.Model):
+                def call(self, inputs, training=None, mask=None):
+                    inputs, meta = inputs
+                    return inputs, predictor._keras_model(inputs), meta
+            predictor.model = WrappedModel()
             # for preproc in predictor.data.params.pre_proc.processors:
             #     self.logger.info("preprocessor: %s", str(preproc))
+            predictor.voter = predictor.create_voter(predictor.data.params)
             return predictor
         def predict_raw(self, predictor, images, ids, page_id=""):
             # for instrumentation, reimplement raw data pipeline:
             from tfaip import PipelineMode, Sample
             from tfaip.data.databaseparams import DataGeneratorParams
             from tfaip.data.pipeline.datapipeline import RawDataPipeline
+            # import tensorflow as tf
             # from tfaip.data.pipeline.datapipeline import DataPipeline
             # from tfaip.data.pipeline.datagenerator import DataGenerator
             # from tfaip.data.pipeline.runningdatapipeline import InputSamplesGenerator, _wrap_dataset
