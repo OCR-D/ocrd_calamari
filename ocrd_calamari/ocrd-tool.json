@@ -21,12 +21,12 @@
 	  "default": 0
 	},
         "checkpoint_dir": {
-          "description": "The directory containing calamari model files (*.ckpt.json). Uses all checkpoints in that directory",
+          "description": "The directory (name or path) containing Calamari model files (*.ckpt.json). Will use all checkpoints in that directory.",
           "type": "string",
           "format": "uri",
           "content-type": "text/directory",
           "cacheable": true,
-          "default": "qurator-gt4histocr-1.0"
+          "required": true
         },
         "voter": {
           "description": "The voting algorithm to use",
