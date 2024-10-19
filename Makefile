@@ -9,6 +9,7 @@ PYTEST_ARGS = -W 'ignore::DeprecationWarning' -W 'ignore::FutureWarning' --isola
 #MODEL = qurator-gt4histocr-1.0 # cannot be migrated to Calamari 2
 #MODEL = deep3_fraktur19 # too large for CI
 MODEL = fraktur_19th_century
+export MODEL # needed for pytest model selection
 EXAMPLE = actevedef_718448162.first-page+binarization+segmentation
 
 # BEGIN-EVAL makefile-parser --make-help Makefile
