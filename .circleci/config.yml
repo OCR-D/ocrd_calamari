@@ -21,8 +21,13 @@ jobs:
           paths:
             - "~/.cache/pip"
       - run: pip3 install --upgrade pip
-      - run: make install deps-test-ubuntu PIP_INSTALL="pip3 install"
-      - run: make coverage
+      - run: 
+          name: install dependencies and package
+          command: make install deps-test-ubuntu PIP_INSTALL="pip3 install"
+      - run: 
+          name: run regression test and coverage test
+          command: make coverage
+          no_output_timeout: 30m
       - codecov/upload
       - save_cache:
           key: v01-pydeps-<< parameters.python-image >>-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}
