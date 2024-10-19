@@ -1,5 +1,5 @@
 numpy
 calamari-ocr >= 2.3.0
-setuptools >= 41.0.0  # tensorboard depends on this, but why do we get an error at runtime?
+tensorflow < 2.16, != 2.12.0 # avoid Keras 3, avoid broken release
 click
 ocrd >= 3.0.0b5
