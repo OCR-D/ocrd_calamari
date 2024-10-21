@@ -25,7 +25,8 @@ from ocrd_utils import (
     points_from_polygon,
     polygon_from_x0y0x1y1,
     tf_disable_interactive_logs,
-    initLogging
+    initLogging,
+    config
 )
 
 # ruff: isort: on
@@ -381,27 +382,38 @@ class CalamariPredictor:
             self.resultq = resultq
             self.terminate = terminate
             super().__init__()
+        def put(self, result):
+            while not self.terminate.is_set():
+                try:
+                    self.resultq.put(result, timeout=9)
+                    return
+                except queue.Full:
+                    continue
+            self.logger.warning("dropping result for page '%s'", result[0])
         def run(self):
             initLogging()
             tf_disable_interactive_logs()
             try:
                 predictor = self.setup()
-                self.resultq.put(("input_channels", predictor.data.params.input_channels))
+                self.put(("input_channels", predictor.data.params.input_channels))
             except Exception as e:
-                self.resultq.put(("input_channels", e))
+                self.put(("input_channels", e))
             while not self.terminate.is_set():
                 try:
-                    page_id, images, ids = self.taskq.get(timeout=1.1)
+                    page_id, images, ids = self.taskq.get(timeout=11)
                 except queue.Empty:
                     continue
                 try:
                     result = self.predict_raw(predictor, images, ids, page_id=page_id)
-                    self.resultq.put((page_id, result))
+                    self.logger.debug("sent %d results for page '%s'", len(result), page_id)
+                    self.put((page_id, result))
                 except Exception as e:
                     # full traceback gets shown when base Processor handles exception
                     self.logger.error("prediction failed on page %s: %s", page_id, e.__class__.__name__)
-                    self.resultq.put((page_id, e))
+                    self.put((page_id, e))
                     # FIXME: or do we have to re-initialize Tensorflow here?
+            self.resultq.close()
+            self.resultq.cancel_join_thread()
         def setup(self):
             """
             Set up the model prior to processing.
@@ -585,25 +597,25 @@ class CalamariPredictor:
     def __init__(self, device, voter, checkpoint_dir):
         self.logger = logging.getLogger("ocrd.processor.CalamariPredictor")
         ctxt = mp.get_context('spawn') # not necessary to fork, and spawn is safer
-        self.taskq = ctxt.Queue(maxsize=3)
-        self.resultq = ctxt.Queue(maxsize=3)
-        self.terminate = ctxt.Event()
+        self.taskq = ctxt.Queue(maxsize=3 + config.OCRD_MAX_PARALLEL_PAGES)
+        self.resultq = ctxt.Queue(maxsize=3 + config.OCRD_MAX_PARALLEL_PAGES)
+        self.terminate = ctxt.Event() # will be shared across all page workers forked from this process
         self.workers = [
             CalamariPredictor.PredictWorker(self.logger, device, voter, checkpoint_dir,
                                             self.taskq, self.resultq, self.terminate)
         ]
+        atexit.register(self.shutdown) # sets self.terminate (on exception or gc)
         for p in self.workers:
             p.start()
-        id_, self.network_input_channels = self.resultq.get("input_channels")
+        id_, self.network_input_channels = self.resultq.get() # block
+        assert id_ == "input_channels" # sole possible task during setup/init
         if isinstance(self.network_input_channels, Exception):
             raise self.network_input_channels
-        assert id_ == "input_channels" # sole possible task
         self.logger.info("Loaded model")
         # prior to base Processor forking page workers, ensure we can sync
         # multiple CalamariPredictors communicating with the same PredictWorker:
         ctxt = mp.get_context("fork") # base.Processor will fork workers
         self.results = ctxt.Manager().dict() # {}
-        atexit.register(self.shutdown)
 
     def __call__(self, images, ids, page_id=None):
         if page_id is None:
@@ -620,16 +632,16 @@ class CalamariPredictor:
             if page_id in self.results:
                 result = self.results.pop(page_id)
                 if isinstance(result, Exception):
-                    #self.shutdown() # stop the other running workers
                     raise Exception(f"prediction failed for page {page_id}") from result
                 return result
-            #self.logger.debug("receiving results in search of page '%s'", page_id)
             try:
-                id_, result = self.resultq.get(timeout=1.1)
+                id_, result = self.resultq.get(timeout=11)
             except queue.Empty:
                 continue
             self.logger.debug("storing results for page '%s'", id_)
             self.results[id_] = result
+        for page_id, _ in self.results.items():
+            self.logger.warning("dropping results for page '%s'", page_id)
         return None
 
     def shutdown(self):
@@ -638,12 +650,7 @@ class CalamariPredictor:
         #     page_id, _, _ = self.taskq.get()
         #     self.logger.warning("dropped task for page %s", page_id)
         self.taskq.close()
-        self.taskq.join_thread()
-        # while not self.resultq.empty():
-        #     page_id, _ = self.resultq.get()
-        #     self.logger.warning("dropped result for page %s", page_id)
-        self.resultq.close()
-        self.resultq.join_thread()
+        self.taskq.cancel_join_thread()
 
 
 # TODO: This is a copy of ocrd_tesserocr's function, and should probably be moved to a
