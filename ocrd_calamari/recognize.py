@@ -5,9 +5,9 @@ from functools import cached_property
 import itertools
 from glob import glob
 import atexit
-from uuid import uuid4
 import queue
 import multiprocessing as mp
+from threading import Thread
 import logging
 
 import numpy as np
@@ -106,7 +106,7 @@ class CalamariRecognize(Processor):
             page, page_id, feature_selector=self.features
         )
 
-        lines = []
+        tasks = []
         maxw = 0
         for region in page.get_AllRegions(classes=["Text"]):
             region_image, region_coords = self.workspace.image_from_segment(
@@ -163,13 +163,17 @@ class CalamariRecognize(Processor):
                         region.id,
                     )
                     continue
-                lines.append((line.id, line, line_coords, line_img))
 
-        if not len(lines):
+                tasks.append(Thread(target=self._process_line,
+                                    args=(line, line_coords, line_img, page_id),
+                                    name="LinePredictor-%s-%s" % (page_id, line.id)))
+                tasks[-1].start()
+
+        if not len(tasks):
             self.logger.warning("No text lines on page '%s'", page_id)
             return OcrdPageResult(pcgts)
 
-        ids, lines, coords, images = zip(*lines)
+        # ids, lines, coords, images = zip(*lines)
         # We cannot delegate to predictor.predict_raw directly...
         #    predictions = self.predictor.predict_raw(images)
         # ...because for efficiency, all page tasks must be synchronised
@@ -183,190 +187,197 @@ class CalamariRecognize(Processor):
         # ...because our pipeline params use bucket batching, i.e. reordering,
         # so we have to pass in additional metadata for re-identification.
         # Hence our predict_raw() re-implementation in CalamariPredictor.
-        predictions = self.predictor(images, ids, page_id=page_id)
-        # Map back predictions to lines via sample metadata
-        predict = {prediction.meta["id"]: prediction.outputs for prediction in predictions}
-        self.logger.info("Received %d line results for page '%s'", len(predict.keys()), page_id)
-
-        #for line, line_coords, prediction in zip(lines, coords, predictions):
-        for line, line_coords in zip(lines, coords):
-            #raw_results, prediction = prediction.outputs
-            raw_results, prediction = predict[line.id]
-
-            # Build line text on our own
-            #
-            # Calamari does whitespace post-processing on prediction.sentence,
-            # while it does not do the same on prediction.positions. Do it on
-            # our own to have consistency.
-            #
-            # XXX Check Calamari's built-in post-processing on
-            #     prediction.sentence
-
-            def _sort_chars(p):
-                """Filter and sort chars of prediction p"""
-                chars = p.chars
-                chars = [
-                    c for c in chars if c.char
-                ]  # XXX Note that omission probabilities are not normalized?!
-                chars = [
-                    c
-                    for c in chars
-                    if c.probability >= self.parameter["glyph_conf_cutoff"]
-                ]
-                chars = sorted(chars, key=lambda k: k.probability, reverse=True)
-                return chars
-
-            def _drop_leading_spaces(positions):
-                return list(
-                    itertools.dropwhile(
-                        lambda p: _sort_chars(p)[0].char == " ", positions
-                    )
-                )
-
-            def _drop_trailing_spaces(positions):
-                return list(reversed(_drop_leading_spaces(reversed(positions))))
-
-            def _drop_double_spaces(positions):
-                def _drop_double_spaces_generator(positions):
-                    last_was_space = False
-                    for p in positions:
-                        if p.chars[0].char == " ":
-                            if not last_was_space:
-                                yield p
-                            last_was_space = True
-                        else:
-                            yield p
-                            last_was_space = False
-
-                return list(_drop_double_spaces_generator(positions))
-
-            positions = prediction.positions
-            positions = _drop_leading_spaces(positions)
-            positions = _drop_trailing_spaces(positions)
-            positions = _drop_double_spaces(positions)
-            positions = list(positions)
-
-            line_text = "".join(_sort_chars(p)[0].char for p in positions)
-            if line_text != prediction.sentence:
-                self.logger.warning(
-                    f"Our own line text is not the same as Calamari's:"
-                    f"'{line_text}' != '{prediction.sentence}'"
-                )
-
-            # Delete existing results
-            if line.get_TextEquiv():
-                self.logger.warning("Line '%s' already contained text results", line.id)
-            line.set_TextEquiv([])
-            if line.get_Word():
-                self.logger.warning(
-                    "Line '%s' already contained word segmentation", line.id
-                )
-            line.set_Word([])
-
-            # Save line results
-            line_conf = prediction.avg_char_probability
-            line.set_TextEquiv(
-                [TextEquivType(Unicode=line_text, conf=line_conf)]
-            )
-
-            # Save word results
-            #
-            # Calamari OCR does not provide word positions, so we infer word
-            # positions from a. text segmentation and b. the glyph positions.
-            # This is necessary because the PAGE XML format enforces a strict
-            # hierarchy of lines > words > glyphs.
-            #
-            # FIXME: use calamari#282 for this
-
-            def _words(s):
-                """Split words based on spaces and include spaces as 'words'"""
-                spaces = None
-                word = ""
-                for c in s:
-                    if c == " " and spaces is True:
-                        word += c
-                    elif c != " " and spaces is False:
-                        word += c
-                    else:
-                        if word:
-                            yield word
-                        word = c
-                        spaces = c == " "
-                yield word
-
-            if self.parameter["textequiv_level"] in ["word", "glyph"]:
-                word_no = 0
-                i = 0
-
-                for word_text in _words(line_text):
-                    word_length = len(word_text)
-                    if not all(c == " " for c in word_text):
-                        word_positions = positions[i : i + word_length]
-                        word_start = word_positions[0].global_start
-                        word_end = word_positions[-1].global_end
-
-                        polygon = polygon_from_x0y0x1y1(
-                            [word_start, 0, word_end, line_image.height]
-                        )
-                        points = points_from_polygon(
-                            coordinates_for_segment(polygon, None, line_coords)
-                        )
-                        # XXX Crop to line polygon?
-
-                        word = WordType(
-                            id="%s_word%04d" % (line.id, word_no),
-                            Coords=CoordsType(points),
-                        )
-                        word.add_TextEquiv(TextEquivType(Unicode=word_text))
-
-                        if self.parameter["textequiv_level"] == "glyph":
-                            for glyph_no, p in enumerate(word_positions):
-                                glyph_start = p.global_start
-                                glyph_end = p.global_end
-
-                                polygon = polygon_from_x0y0x1y1(
-                                    [
-                                        glyph_start,
-                                        0,
-                                        glyph_end,
-                                        line_image.height,
-                                    ]
-                                )
-                                points = points_from_polygon(
-                                    coordinates_for_segment(
-                                        polygon, None, line_coords
-                                    )
-                                )
-
-                                glyph = GlyphType(
-                                    id="%s_glyph%04d" % (word.id, glyph_no),
-                                    Coords=CoordsType(points),
-                                )
-
-                                # Add predictions (= TextEquivs)
-                                char_index_start = 1
-                                # Index must start with 1, see
-                                # https://ocr-d.github.io/page#multiple-textequivs
-                                for char_index, char in enumerate(
-                                    _sort_chars(p), start=char_index_start
-                                ):
-                                    glyph.add_TextEquiv(
-                                        TextEquivType(
-                                            Unicode=char.char,
-                                            index=char_index,
-                                            conf=char.probability,
-                                        )
-                                    )
-
-                                word.add_Glyph(glyph)
-
-                        line.add_Word(word)
-                        word_no += 1
-
-                    i += word_length
+        # predictions = self.predictor(images, ids, page_id=page_id)
+        # # Map back predictions to lines via sample metadata
+        # predict = {prediction.meta["id"]: prediction.outputs for prediction in predictions}
+        # self.logger.info("Received %d line results for page '%s'", len(predict.keys()), page_id)
+        # for line, line_coords in zip(lines, coords):
+        #     raw_results, prediction = predict[line.id]
+        for task in tasks:
+            task.join()
 
         _page_update_higher_textequiv_levels("line", pcgts)
         return OcrdPageResult(pcgts)
+
+    def _process_line(self, line, line_coords, line_image, page_id):
+        result = self.predictor(line_image, line.id, page_id)
+        self.logger.info("Received line result for page '%s' line '%s'", page_id, line.id)
+        self._post_process_line(line, line_coords, result)
+
+    def _post_process_line(self, line, line_coords, result):
+        _, prediction = result
+
+        # Build line text on our own
+        #
+        # Calamari does whitespace post-processing on prediction.sentence,
+        # while it does not do the same on prediction.positions. Do it on
+        # our own to have consistency.
+        #
+        # XXX Check Calamari's built-in post-processing on
+        #     prediction.sentence
+
+        def _sort_chars(p):
+            """Filter and sort chars of prediction p"""
+            chars = p.chars
+            chars = [
+                c for c in chars if c.char
+            ]  # XXX Note that omission probabilities are not normalized?!
+            chars = [
+                c
+                for c in chars
+                if c.probability >= self.parameter["glyph_conf_cutoff"]
+            ]
+            chars = sorted(chars, key=lambda k: k.probability, reverse=True)
+            return chars
+
+        def _drop_leading_spaces(positions):
+            return list(
+                itertools.dropwhile(
+                    lambda p: _sort_chars(p)[0].char == " ", positions
+                )
+            )
+
+        def _drop_trailing_spaces(positions):
+            return list(reversed(_drop_leading_spaces(reversed(positions))))
+
+        def _drop_double_spaces(positions):
+            def _drop_double_spaces_generator(positions):
+                last_was_space = False
+                for p in positions:
+                    if p.chars[0].char == " ":
+                        if not last_was_space:
+                            yield p
+                        last_was_space = True
+                    else:
+                        yield p
+                        last_was_space = False
+
+            return list(_drop_double_spaces_generator(positions))
+
+        positions = prediction.positions
+        positions = _drop_leading_spaces(positions)
+        positions = _drop_trailing_spaces(positions)
+        positions = _drop_double_spaces(positions)
+        positions = list(positions)
+
+        line_text = "".join(_sort_chars(p)[0].char for p in positions)
+        if line_text != prediction.sentence:
+            self.logger.warning(
+                f"Our own line text is not the same as Calamari's:"
+                f"'{line_text}' != '{prediction.sentence}'"
+            )
+
+        # Delete existing results
+        if line.get_TextEquiv():
+            self.logger.warning("Line '%s' already contained text results", line.id)
+        line.set_TextEquiv([])
+        if line.get_Word():
+            self.logger.warning(
+                "Line '%s' already contained word segmentation", line.id
+            )
+        line.set_Word([])
+
+        # Save line results
+        line_conf = prediction.avg_char_probability
+        line.set_TextEquiv(
+            [TextEquivType(Unicode=line_text, conf=line_conf)]
+        )
+
+        # Save word results
+        #
+        # Calamari OCR does not provide word positions, so we infer word
+        # positions from a. text segmentation and b. the glyph positions.
+        # This is necessary because the PAGE XML format enforces a strict
+        # hierarchy of lines > words > glyphs.
+        #
+        # FIXME: use calamari#282 for this
+
+        def _words(s):
+            """Split words based on spaces and include spaces as 'words'"""
+            spaces = None
+            word = ""
+            for c in s:
+                if c == " " and spaces is True:
+                    word += c
+                elif c != " " and spaces is False:
+                    word += c
+                else:
+                    if word:
+                        yield word
+                    word = c
+                    spaces = c == " "
+            yield word
+
+        if self.parameter["textequiv_level"] in ["word", "glyph"]:
+            word_no = 0
+            i = 0
+
+            for word_text in _words(line_text):
+                word_length = len(word_text)
+                if not all(c == " " for c in word_text):
+                    word_positions = positions[i : i + word_length]
+                    word_start = word_positions[0].global_start
+                    word_end = word_positions[-1].global_end
+
+                    polygon = polygon_from_x0y0x1y1(
+                        [word_start, 0, word_end, line_image.height]
+                    )
+                    points = points_from_polygon(
+                        coordinates_for_segment(polygon, None, line_coords)
+                    )
+                    # XXX Crop to line polygon?
+
+                    word = WordType(
+                        id="%s_word%04d" % (line.id, word_no),
+                        Coords=CoordsType(points),
+                    )
+                    word.add_TextEquiv(TextEquivType(Unicode=word_text))
+
+                    if self.parameter["textequiv_level"] == "glyph":
+                        for glyph_no, p in enumerate(word_positions):
+                            glyph_start = p.global_start
+                            glyph_end = p.global_end
+
+                            polygon = polygon_from_x0y0x1y1(
+                                [
+                                    glyph_start,
+                                    0,
+                                    glyph_end,
+                                    line_image.height,
+                                ]
+                            )
+                            points = points_from_polygon(
+                                coordinates_for_segment(
+                                    polygon, None, line_coords
+                                )
+                            )
+
+                            glyph = GlyphType(
+                                id="%s_glyph%04d" % (word.id, glyph_no),
+                                Coords=CoordsType(points),
+                            )
+
+                            # Add predictions (= TextEquivs)
+                            char_index_start = 1
+                            # Index must start with 1, see
+                            # https://ocr-d.github.io/page#multiple-textequivs
+                            for char_index, char in enumerate(
+                                _sort_chars(p), start=char_index_start
+                            ):
+                                glyph.add_TextEquiv(
+                                    TextEquivType(
+                                        Unicode=char.char,
+                                        index=char_index,
+                                        conf=char.probability,
+                                    )
+                                )
+
+                            word.add_Glyph(glyph)
+
+                    line.add_Word(word)
+                    word_no += 1
+
+                i += word_length
 
 class CalamariPredictor:
     class QueueStop:
@@ -394,27 +405,30 @@ class CalamariPredictor:
             initLogging()
             tf_disable_interactive_logs()
             try:
-                predictor = self.setup()
+                predictor = self.setup_predictor()
+                generator = self.setup_pipelines(predictor)
+                generator = iter(generator())
                 self.put(("input_channels", predictor.data.params.input_channels))
             except Exception as e:
                 self.put(("input_channels", e))
+                # unrecoverable
+                self.terminate.set()
             while not self.terminate.is_set():
                 try:
-                    page_id, images, ids = self.taskq.get(timeout=11)
-                except queue.Empty:
-                    continue
-                try:
-                    result = self.predict_raw(predictor, images, ids, page_id=page_id)
-                    self.logger.debug("sent %d results for page '%s'", len(result), page_id)
-                    self.put((page_id, result))
+                    prediction = next(generator) # StopIteration?
+                    page_id, line_id = prediction.meta["id"]
+                    result = prediction.outputs
+                    self.put((page_id, line_id, result))
+                    self.logger.debug("sent result for page '%s' line '%s'", page_id, line_id)
                 except Exception as e:
                     # full traceback gets shown when base Processor handles exception
-                    self.logger.error("prediction failed on page %s: %s", page_id, e.__class__.__name__)
-                    self.put((page_id, e))
+                    #self.logger.error("prediction failed: %s", e.__class__.__name__)
+                    self.logger.exception("prediction failed")
+                    self.put(("", "", e)) # for which page/line??
                     # FIXME: or do we have to re-initialize Tensorflow here?
             self.resultq.close()
             self.resultq.cancel_join_thread()
-        def setup(self):
+        def setup_predictor(self):
             """
             Set up the model prior to processing.
             """
@@ -480,99 +494,67 @@ class CalamariPredictor:
             #     self.logger.info("preprocessor: %s", str(preproc))
             predictor.voter = predictor.create_voter(predictor.data.params)
             return predictor
-        def predict_raw(self, predictor, images, ids, page_id=""):
-            # for instrumentation, reimplement raw data pipeline:
-            from tfaip import PipelineMode, Sample
+        def setup_pipelines(self, predictor):
+            # set up pipeline and generators (as infinite dataset)
+            from dataclasses import field, dataclass
+            from paiargparse import pai_dataclass
+            from tfaip import Sample
             from tfaip.data.databaseparams import DataGeneratorParams
-            from tfaip.data.pipeline.datapipeline import RawDataPipeline
-            # import tensorflow as tf
-            # from tfaip.data.pipeline.datapipeline import DataPipeline
-            # from tfaip.data.pipeline.datagenerator import DataGenerator
-            # from tfaip.data.pipeline.runningdatapipeline import InputSamplesGenerator, _wrap_dataset
-            # from PIL import Image
-            # class MyInputSamplesGenerator(InputSamplesGenerator):
-            #     def as_dataset(self, tf_dataset_generator):
-            #         def generator():
-            #             with self as samples:
-            #                 # now instrument the processors in the running pipeline
-            #                 # for pipeline in self.running_pipeline.pipeline:
-            #                 #     print("pipeline: %s" % str(pipeline))
-            #                 #     proc = pipeline.create_processor_fn()
-            #                 #     for processor in proc.processors:
-            #                 #         print("next processor: %s" % repr(processor))
-            #                 for s in samples:
-            #                     #Image.fromarray(s.inputs["img"].T.squeeze(), mode="L").save(s.meta["id"] + ".png")
-            #                     yield s
-            #         dataset = tf_dataset_generator.create(generator, self.data_generator.yields_batches())
-            #         def print_fn(*x):
-            #             import tensorflow as tf
-            #             tf.print(tf.shape(x[0]["img"]))
-            #             return x
-            #         #dataset = dataset.map(print_fn)
-            #         dataset = _wrap_dataset(
-            #             self.mode, dataset, self.pipeline_params, self.data, self.data_generator.yields_batches())
-            #         #dataset = dataset.map(print_fn)
-            #         return dataset
-            # class RawDataGenerator(DataGenerator):
-            #     def __len__(self):
-            #         return len(images)
-            #     def generate(self):
-            #         #return map(lambda x: Sample(inputs=x, meta={}), images)
-            #         def to_sample(x):
-            #             image, line = x
-            #             return Sample(inputs=image, meta={"id": line.id})
-            #         return map(to_sample, zip(images, ids))
-            # class RawDataPipeline(DataPipeline):
-            #     def create_data_generator(self):
-            #         return RawDataGenerator(mode=self.mode, params=self.generator_params)
-            #     def input_dataset_with_len(self, auto_repeat=None):
-            #         #gen = self.generate_input_samples(auto_repeat=auto_repeat)
-            #         gen = MyInputSamplesGenerator(
-            #             self._input_processors,
-            #             self.data,
-            #             self.create_data_generator(),
-            #             self.pipeline_params,
-            #             self.mode,
-            #             auto_repeat
-            #         )
-            #         return gen.as_dataset(self._create_tf_dataset_generator()), len(gen)
-            # input_pipeline = RawDataPipeline(predictor.params.pipeline, predictor._data, DataGeneratorParams())
-            # use tfaip's RawDataPipeline without instrumentation
-            assert len(ids) == len(images)
-            self.logger.debug("predicting %d images for page '%s'", len(images), page_id)
-            input_pipeline = RawDataPipeline(
-                [Sample(inputs=image, meta={"id": id})
-                       for image, id in zip(images, ids)],
-                predictor.params.pipeline,
-                predictor._data,
-                DataGeneratorParams(),
-            )
-            # list() - exhaust result generator to stay thread-safe:
-            #predictions = list(predictor.predict_pipeline(input_pipeline))
+            from tfaip.data.pipeline.datapipeline import DataPipeline
+            from tfaip.data.pipeline.datagenerator import DataGenerator
+            from tfaip.data.pipeline.runningdatapipeline import _wrap_dataset
+            @pai_dataclass
+            @dataclass
+            class QueueDataGeneratorParams(DataGeneratorParams):
+                terminate : mp.Event = field(default=None)
+                taskq : mp.Queue = field(default=None)
+                @staticmethod
+                def cls():
+                    return QueueDataGenerator
+            class QueueDataGenerator(DataGenerator[QueueDataGeneratorParams]):
+                def __len__(self):
+                    raise NotImplementedError()
+                def generate(self):
+                    while not self.params.terminate.is_set():
+                        try:
+                            page_id, line_id, image = self.params.taskq.get(timeout=11)
+                        except queue.Empty:
+                            continue
+                        yield Sample(inputs=image, meta={"id": (page_id, line_id)})
+            class QueueDataPipeline(DataPipeline):
+                def create_data_generator(self):
+                    return QueueDataGenerator(mode=self.mode, params=self.generator_params)
+                def input_dataset(self, auto_repeat=None):
+                    gen = self.generate_input_samples(auto_repeat=auto_repeat)
+                    #return gen.as_dataset(self._create_tf_dataset_generator())
+                    gen.running_pipeline = gen.processor_pipeline_params.create(gen.pipeline_params, gen.data_params)
+                    def generator():
+                        running_samples_generator = gen._generate_input_samples()
+                        for sample in running_samples_generator:
+                            yield sample
+                        running_samples_generator.close()
+                    dataset = self._create_tf_dataset_generator().create(generator, False)
+                    dataset = _wrap_dataset(
+                        self.mode, dataset, self.pipeline_params, self.data, False
+                    )
+                    return dataset
+            self.logger.debug("setting up input pipeline")
+            input_pipeline = QueueDataPipeline(
+                predictor.params.pipeline, predictor._data,
+                QueueDataGeneratorParams(terminate=self.terminate, taskq=self.taskq))
             from tfaip.predict.predictorbase import data_adapter
             from tfaip.util.tftyping import sync_to_numpy_or_python_type
             from tfaip.data.pipeline.processor.params import SequentialProcessorPipelineParams
             from tfaip.predict.multimodelpostprocessor import MultiModelPostProcessorParams
+            self.logger.debug("instantiating input dataset")
             tf_dataset = input_pipeline.input_dataset()
-            #tf_dataset = input_pipeline.generate_input_samples().as_dataset(
-            #    input_pipeline._create_tf_dataset_generator())
+            import tensorflow as tf
+            # do we really need that?
+            tf_dataset = tf_dataset.apply(
+                tf.data.experimental.assert_cardinality(tf.data.INFINITE_CARDINALITY)
+            )
+            self.logger.debug("setting up output pipeline")
             def predict_dataset(dataset):
-                # we cannot use predictor.model.predict followed by unwrap_batch
-                # directly, because TF now outputs ragged tensors, which must be
-                # converted to_tensor and then to numpy. This is from tfaip's
-                # MultiModelPredictor.predict_pipeline:
-                # dataset = dataset.map(lambda i, m: ((i, m),))
-                # with predictor.model.distribute_strategy.scope():
-                #     # predict_function = predictor.model.make_predict_function()
-                #     data_handler = data_adapter.DataHandler(dataset, distribute=False)
-                #     for _, iterator in data_handler.enumerate_epochs():  # Single epoch.
-                #         with data_handler.catch_stop_iteration():
-                #             for _ in data_handler.steps():
-                #                 r = predict_function(iterator)  # hack to access inputs
-                #                 inputs, outputs, meta = sync_to_numpy_or_python_type(r)
-                #                 # split into single samples
-                #                 for sample in predictor._unwrap_batch(inputs, {}, outputs, meta):
-                #                     yield sample
                 for batch in dataset:
                     r = predictor.model.predict_on_batch(batch)
                     inputs, outputs, meta = sync_to_numpy_or_python_type(r)
@@ -588,17 +570,16 @@ class CalamariPredictor:
                 num_threads=predictor.data.params.post_proc.num_threads,
                 max_tasks_per_process=predictor.data.params.post_proc.max_tasks_per_process,
             ).create(input_pipeline.pipeline_params, predictor.data.params)
-            predictions = list(map(predictor.voter.finalize_sample,
-                                   post_proc_pipeline.apply(predict_dataset(tf_dataset))))
-            self.logger.debug("predicted %d images for page '%s'", len(predictions), page_id)
-            assert len(predictions) == len(images)
-            return predictions
+            def output_generator():
+                for sample in post_proc_pipeline.apply(predict_dataset(tf_dataset)):
+                    yield predictor.voter.finalize_sample(sample)
+            return output_generator
 
     def __init__(self, device, voter, checkpoint_dir):
         self.logger = logging.getLogger("ocrd.processor.CalamariPredictor")
         ctxt = mp.get_context('spawn') # not necessary to fork, and spawn is safer
-        self.taskq = ctxt.Queue(maxsize=3 + config.OCRD_MAX_PARALLEL_PAGES)
-        self.resultq = ctxt.Queue(maxsize=3 + config.OCRD_MAX_PARALLEL_PAGES)
+        self.taskq = ctxt.Queue(maxsize=3 + config.OCRD_MAX_PARALLEL_PAGES * 200) # 3 + npages * nlines
+        self.resultq = ctxt.Queue(maxsize=3 + config.OCRD_MAX_PARALLEL_PAGES * 200)
         self.terminate = ctxt.Event() # will be shared across all page workers forked from this process
         self.workers = [
             CalamariPredictor.PredictWorker(self.logger, device, voter, checkpoint_dir,
@@ -617,30 +598,29 @@ class CalamariPredictor:
         ctxt = mp.get_context("fork") # base.Processor will fork workers
         self.results = ctxt.Manager().dict() # {}
 
-    def __call__(self, images, ids, page_id=None):
-        if page_id is None:
-            page_id = uuid4()
-        self.taskq.put((page_id, images, ids))
-        self.logger.debug("sent %d images for page '%s'", len(images), page_id)
-        result = self.get(page_id)
-        self.logger.debug("received %d results for page '%s'", len(result), page_id)
+    def __call__(self, image, line_id, page_id):
+        self.taskq.put((page_id, line_id, image))
+        self.logger.debug("sent image for page '%s' line '%s'", page_id, line_id)
+        result = self.get(page_id, line_id)
+        self.logger.debug("received result for page '%s' line '%s'", page_id, line_id)
         return result
 
-    def get(self, page_id):
-        self.logger.debug("requested results for page '%s'", page_id)
+    def get(self, page_id, line_id):
+        self.logger.debug("requested result for page '%s' line '%s'", page_id, line_id)
         while not self.terminate.is_set():
-            if page_id in self.results:
-                result = self.results.pop(page_id)
-                if isinstance(result, Exception):
-                    raise Exception(f"prediction failed for page {page_id}") from result
+            if (page_id, line_id) in self.results:
+                result = self.results.pop((page_id, line_id))
+                # if isinstance(result, Exception):
+                #     raise Exception(f"prediction failed for page {page_id}") from result
                 return result
             try:
-                id_, result = self.resultq.get(timeout=11)
+                page_id, line_id, result = self.resultq.get(timeout=11)
             except queue.Empty:
                 continue
-            self.logger.debug("storing results for page '%s'", id_)
-            self.results[id_] = result
-        for page_id, _ in self.results.items():
+            # FIXME what if page_id == line_id == "" and result is an exception??
+            self.logger.debug("storing results for page '%s' line '%s'", page_id, line_id)
+            self.results[(page_id, line_id)] = result
+        for page_id, line_id in self.results.keys():
             self.logger.warning("dropping results for page '%s'", page_id)
         return None
 
