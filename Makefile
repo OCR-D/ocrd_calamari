@@ -8,6 +8,9 @@ EXAMPLE = actevedef_718448162.first-page+binarization+segmentation
 
 # BEGIN-EVAL makefile-parser --make-help Makefile
 
+DOCKER_BASE_IMAGE = docker.io/ocrd/core-cuda-tf2:v2.70.0
+DOCKER_TAG = 'ocrd/calamari'
+
 help:
 	@echo ""
 	@echo "  Targets"
@@ -21,13 +24,16 @@ help:
 	@echo "    assets-clean     Remove symlinks in test/assets"
 	@echo "    test             Run unit tests"
 	@echo "    coverage         Run unit tests and determine test coverage"
+	@echo "    docker           Build Docker image"
 	@echo ""
 	@echo "  Variables"
 	@echo ""
-	@echo "    PYTHON       '$(PYTHON)'"
-	@echo "    PIP_INSTALL  '$(PIP_INSTALL)'"
-	@echo "    GIT_CLONE    '$(GIT_CLONE)'"
-	@echo "    MODEL        '$(MODEL)'"
+	@echo "    PYTHON            '$(PYTHON)'"
+	@echo "    PIP_INSTALL       '$(PIP_INSTALL)'"
+	@echo "    GIT_CLONE         '$(GIT_CLONE)'"
+	@echo "    MODEL             '$(MODEL)'"
+	@echo "    DOCKER_TAG        '$(DOCKER_TAG)'"
+	@echo "    DOCKER_BASE_IMAGE '$(DOCKER_BASE_IMAGE)'"
 
 # END-EVAL
 
@@ -91,4 +97,11 @@ coverage: test/assets $(MODEL)
 	coverage report
 	coverage html
 
-.PHONY: install assets-clean deps-test test coverage $(MODEL) example
+docker:
+	docker build \
+	--build-arg DOCKER_BASE_IMAGE=$(DOCKER_BASE_IMAGE) \
+	--build-arg VCS_REF=$$(git rev-parse --short HEAD) \
+	--build-arg BUILD_DATE=$$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+	-t $(DOCKER_TAG) .
+
+.PHONY: install assets-clean deps-test test coverage $(MODEL) example docker

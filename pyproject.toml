@@ -40,6 +40,9 @@ Repository = "https://github.com/OCR-D/ocrd_calamari.git"
 dependencies = {file = ["requirements.txt"]}
 optional-dependencies.dev = {file = ["requirements-dev.txt"]}
 
+[tool.setuptools.package-data]
+"*" = ["*.json"]
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["ocrd_calamari"]
