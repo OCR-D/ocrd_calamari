@@ -31,11 +31,14 @@ from ocrd_utils import (
 
 # ruff: isort: on
 
-BATCH_SIZE = 3
-GROUP_BOUNDS = [100, 200, 400, 800, 1600, 3200]
-# default tfaip bucket_batch_sizes is buggy (inverse quotient)
-BATCH_GROUPS = [max(1, (max(GROUP_BOUNDS) * BATCH_SIZE) // length)
-                for length in GROUP_BOUNDS] + [BATCH_SIZE]
+# BATCH_SIZE = 96 # size at smallest bound
+# GROUP_BOUNDS = [100, 200, 400, 800, 1600, 3200, 6400]
+# # default tfaip bucket_batch_sizes is buggy (inverse quotient)
+# BATCH_GROUPS = [max(1, (min(GROUP_BOUNDS) * BATCH_SIZE) // length)
+#                 for length in GROUP_BOUNDS] + [1]
+# we cannot use bucket_by_sequence_length (variable batch size),
+# because that would require exhausting the iterator
+BATCH_SIZE = 12
 
 class CalamariRecognize(Processor):
     @property
@@ -476,8 +479,14 @@ class CalamariPredictor:
                     use_shared_memory=True,
                     # group lines with similar lengths to reduce need for padding
                     # and optimally utilise batch size;
-                    bucket_boundaries=GROUP_BOUNDS,
-                    bucket_batch_sizes=BATCH_GROUPS,
+                    # unfortunately, we cannot use this in an infinite generator
+                    # setting, because TF's bucket_by_sequence_length sometimes
+                    # wants to read ahead for optimal group allocation, which can
+                    # result in deadlocks (because the page workers cannot finish
+                    # unless the already sent batches are returned), so bucketing
+                    # must be disabled:
+                    #bucket_boundaries=GROUP_BOUNDS,
+                    #bucket_batch_sizes=BATCH_GROUPS,
                 )
             )
             voter_params = VoterParams()
@@ -560,9 +569,8 @@ class CalamariPredictor:
             self.logger.debug("instantiating input dataset")
             tf_dataset = input_pipeline.input_dataset()
             import tensorflow as tf
-            # do we really need that?
             tf_dataset = tf_dataset.apply(
-                tf.data.experimental.assert_cardinality(tf.data.INFINITE_CARDINALITY)
+                tf.data.experimental.ignore_errors(log_warning=True)
             )
             self.logger.debug("setting up output pipeline")
             def predict_dataset(dataset):
@@ -606,8 +614,8 @@ class CalamariPredictor:
         self.logger.info("Loaded model")
         # prior to base Processor forking page workers, ensure we can sync
         # multiple CalamariPredictors communicating with the same PredictWorker:
-        ctxt = mp.get_context("fork") # base.Processor will fork workers
-        self.results = ctxt.Manager().dict() # {}
+        mgr = mp.get_context("fork").Manager() # base.Processor will fork workers
+        self.results = mgr.dict() # {}
 
     def __call__(self, image, line_id, page_id):
         self.taskq.put((page_id, line_id, image))
