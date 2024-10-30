@@ -107,6 +107,17 @@ class CalamariRecognize(Processor):
         )
 
         tasks = []
+        class TaskThread(Thread):
+            def run(self):
+                try:
+                    super().run()
+                    self.exc = None
+                except Exception as exc:
+                    self.exc = exc
+            def join(self, timeout=None):
+                super().join(timeout=timeout)
+                if self.exc:
+                    raise self.exc from None
         maxw = 0
         for region in page.get_AllRegions(classes=["Text"]):
             region_image, region_coords = self.workspace.image_from_segment(
@@ -164,9 +175,9 @@ class CalamariRecognize(Processor):
                     )
                     continue
 
-                tasks.append(Thread(target=self._process_line,
-                                    args=(line, line_coords, line_img, page_id),
-                                    name="LinePredictor-%s-%s" % (page_id, line.id)))
+                tasks.append(TaskThread(target=self._process_line,
+                                        args=(line, line_coords, line_img, page_id),
+                                        name="LinePredictor-%s-%s" % (page_id, line.id)))
                 tasks[-1].start()
 
         if not len(tasks):
