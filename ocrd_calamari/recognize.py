@@ -434,17 +434,26 @@ class CalamariPredictor:
                 self.terminate.set()
             while not self.terminate.is_set():
                 try:
-                    prediction = next(generator) # StopIteration?
+                    prediction = next(generator)
                     page_id, line_id = prediction.meta["id"]
                     result = prediction.outputs
                     self.put((page_id, line_id, result))
                     self.logger.debug("sent result for page '%s' line '%s'", page_id, line_id)
+                except StopIteration:
+                    self.logger.info("prediction exhausted generator")
+                    # unrecoverable
+                    self.terminate.set()
+                except KeyboardInterrupt:
+                    self.terminate.set()
                 except Exception as e:
                     # full traceback gets shown when base Processor handles exception
-                    #self.logger.error("prediction failed: %s", e.__class__.__name__)
-                    self.logger.exception("prediction failed")
+                    self.logger.error("prediction failed: %s", e.__class__.__name__)
                     self.put(("", "", e)) # for which page/line??
-                    # FIXME: or do we have to re-initialize Tensorflow here?
+                    # Not only would we have to re-initialize Tensorflow here,
+                    # we cannot even discern which tasks/pages the error occurred on,
+                    # so there will be some worker waiting for results inevitably...
+                    self.terminate.set()
+            self.logger.debug("terminating predictor: closing result queue")
             self.resultq.close()
             self.resultq.cancel_join_thread()
         def setup_predictor(self):
