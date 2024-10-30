@@ -626,22 +626,29 @@ class CalamariPredictor:
 
     def get(self, page_id, line_id):
         self.logger.debug("requested result for page '%s' line '%s'", page_id, line_id)
+        err = None
         while not self.terminate.is_set():
             if (page_id, line_id) in self.results:
                 result = self.results.pop((page_id, line_id))
                 # if isinstance(result, Exception):
                 #     raise Exception(f"prediction failed for page {page_id}") from result
                 return result
+            #self.logger.debug("awaiting result for page '%s' line '%s'", page_id, line_id)
             try:
-                page_id, line_id, result = self.resultq.get(timeout=11)
+                page_id1, line_id1, result = self.resultq.get(timeout=0.7)
             except queue.Empty:
                 continue
             # FIXME what if page_id == line_id == "" and result is an exception??
-            self.logger.debug("storing results for page '%s' line '%s'", page_id, line_id)
-            self.results[(page_id, line_id)] = result
+            self.logger.debug("storing results  for page '%s' line '%s'", page_id1, line_id1)
+            self.results[(page_id1, line_id1)] = result
+            if page_id1 == '' and line_id1 == '':
+                err = result
         for page_id, line_id in self.results.keys():
-            self.logger.warning("dropping results for page '%s'", page_id)
-        return None
+            if page_id != 'none':
+                self.logger.warning("dropping results for page '%s'", page_id)
+            if page_id == '' and line_id == '':
+                err = self.results[(page_id, line_id)]
+        raise Exception("predictor terminated prematurely") from err
 
     def shutdown(self):
         self.terminate.set()
