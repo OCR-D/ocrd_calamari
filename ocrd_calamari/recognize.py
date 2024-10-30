@@ -187,7 +187,6 @@ class CalamariRecognize(Processor):
             self.logger.warning("No text lines on page '%s'", page_id)
             return OcrdPageResult(pcgts)
 
-        # ids, lines, coords, images = zip(*lines)
         # We cannot delegate to predictor.predict_raw directly...
         #    predictions = self.predictor.predict_raw(images)
         # ...because for efficiency, all page tasks must be synchronised
@@ -198,24 +197,29 @@ class CalamariRecognize(Processor):
         #                                                result = predictor.predict_raw(images)
         #                                                resultq.put((page_id, result))
         #    predictions = resultq.get(page_id)
-        # ...because our pipeline params use bucket batching, i.e. reordering,
-        # so we have to pass in additional metadata for re-identification.
-        # Hence our predict_raw() re-implementation in CalamariPredictor.
-        # predictions = self.predictor(images, ids, page_id=page_id)
-        # # Map back predictions to lines via sample metadata
-        # predict = {prediction.meta["id"]: prediction.outputs for prediction in predictions}
-        # self.logger.info("Received %d line results for page '%s'", len(predict.keys()), page_id)
-        # for line, line_coords in zip(lines, coords):
-        #     raw_results, prediction = predict[line.id]
+        # ...because this would create a new pipeline for each page,
+        # which is wildly inefficient.
+        # Moreover, predict_raw() uses predict_dataset(), which is peaky
+        # itself.
+        # Instead, we interleave and flow line imges from all pages into
+        # a pipeline based on predict_on_batch(), which gets set up only once.
+        # Each sample is annotated with page+line metadata for re-identification.
+        # All page workers (subprocesses) communicate with the single predictor worker
+        # (subprocess) via queues and a single lock that controls whether or not batches
+        # are filled up with dummy data (as long as workers are still waiting for results).
+        Thread(target=self.predictor.fill.acquire, name="PagePredictor-fillneededby-%s" % page_id).start()
         for task in tasks:
             task.join()
+        Thread(target=self.predictor.fill.release, name="PagePredictor-fillnotneededby-%s" % page_id).start()
+        self.logger.info("All lines completed for page '%s'", page_id)
 
         _page_update_higher_textequiv_levels("line", pcgts)
         return OcrdPageResult(pcgts)
 
     def _process_line(self, line, line_coords, line_image, page_id):
+        self.logger.debug("Sending line image for page '%s' line '%s'", page_id, line.id)
         result = self.predictor(line_image, line.id, page_id)
-        self.logger.info("Received line result for page '%s' line '%s'", page_id, line.id)
+        self.logger.debug("Received line result for page '%s' line '%s'", page_id, line.id)
         self._post_process_line(line, line_coords, result)
 
     def _post_process_line(self, line, line_coords, result):
@@ -394,27 +398,28 @@ class CalamariRecognize(Processor):
                 i += word_length
 
 class CalamariPredictor:
-    class QueueStop:
-        pass
-
     class PredictWorker(mp.Process):
-        def __init__(self, logger, device, voter, checkpoint_dir, taskq, resultq, terminate):
+        def __init__(self, logger, device, voter, checkpoint_dir, taskq, resultq, terminate, fill):
             self.logger = logger # FIXME: synchronize loggers, too
+            #self.logger.setLevel(logging.DEBUG)
             self.device = device
             self.voter = voter
             self.checkpoint_dir = checkpoint_dir
             self.taskq = taskq
             self.resultq = resultq
             self.terminate = terminate
+            self.fill = fill
             super().__init__()
         def put(self, result):
             while not self.terminate.is_set():
                 try:
-                    self.resultq.put(result, timeout=9)
+                    self.resultq.put(result, timeout=0.3)
                     return
                 except queue.Full:
                     continue
-            self.logger.warning("dropping result for page '%s'", result[0])
+            page_id = result[0]
+            if page_id != "none":
+                self.logger.warning("dropping result for page '%s'", page_id)
         def run(self):
             initLogging()
             tf_disable_interactive_logs()
@@ -527,6 +532,7 @@ class CalamariPredictor:
             @dataclass
             class QueueDataGeneratorParams(DataGeneratorParams):
                 terminate : mp.Event = field(default=None)
+                fill : mp.Lock = field(default=None)
                 taskq : mp.Queue = field(default=None)
                 @staticmethod
                 def cls():
@@ -537,9 +543,17 @@ class CalamariPredictor:
                 def generate(self):
                     while not self.params.terminate.is_set():
                         try:
-                            page_id, line_id, image = self.params.taskq.get(timeout=11)
+                            page_id, line_id, image = self.params.taskq.get(timeout=1.1)
                         except queue.Empty:
+                            # anyone currently awaiting results?
+                            if self.params.fill.acquire(block=False):
+                                self.params.fill.release() # not needed
+                            else:
+                                # stuff with empty images to prevent pipeline / batching stall
+                                # width=2: will be padded to batch anyway
+                                yield Sample(inputs=np.ones((48, 2, predictor.data.params.input_channels), dtype=np.uint8), meta={"id": ("none", "none")})
                             continue
+                        #print(f"feeding another input page {page_id} line {line_id}")
                         yield Sample(inputs=image, meta={"id": (page_id, line_id)})
             class QueueDataPipeline(DataPipeline):
                 def create_data_generator(self):
@@ -551,17 +565,25 @@ class CalamariPredictor:
                     def generator():
                         running_samples_generator = gen._generate_input_samples()
                         for sample in running_samples_generator:
+                            #print(f"feeding another input {sample.meta} len={sample.inputs['img'].shape[0]}")
                             yield sample
+                        #print(f"closing generator")
                         running_samples_generator.close()
                     dataset = self._create_tf_dataset_generator().create(generator, False)
+                    def print_fn(*x):
+                        import tensorflow as tf
+                        tf.print(tf.shape(x[0]["img"]))
+                        return x
+                    #dataset = dataset.map(print_fn)
                     dataset = _wrap_dataset(
                         self.mode, dataset, self.pipeline_params, self.data, False
                     )
+                    #dataset = dataset.map(print_fn)
                     return dataset
             self.logger.debug("setting up input pipeline")
             input_pipeline = QueueDataPipeline(
                 predictor.params.pipeline, predictor._data,
-                QueueDataGeneratorParams(terminate=self.terminate, taskq=self.taskq))
+                QueueDataGeneratorParams(terminate=self.terminate, fill=self.fill, taskq=self.taskq))
             from tfaip.predict.predictorbase import data_adapter
             from tfaip.util.tftyping import sync_to_numpy_or_python_type
             from tfaip.data.pipeline.processor.params import SequentialProcessorPipelineParams
@@ -575,9 +597,13 @@ class CalamariPredictor:
             self.logger.debug("setting up output pipeline")
             def predict_dataset(dataset):
                 for batch in dataset:
+                    #ids = sync_to_numpy_or_python_type(batch[1]['meta'])
+                    #ids = [json.loads(l[0])['id'][1] for l in ids]
+                    #print(f"batch size: {batch[0]['img'].shape} {ids.count('none')/len(ids)*100}%")
                     r = predictor.model.predict_on_batch(batch)
                     inputs, outputs, meta = sync_to_numpy_or_python_type(r)
                     for sample in predictor._unwrap_batch(inputs, {}, outputs, meta):
+                        #print(f"feeding another output {sample.meta}")
                         yield sample
             post_processors = [
                 d.get_or_create_pipeline(predictor.params.pipeline, input_pipeline.generator_params).create_output_pipeline()
@@ -596,13 +622,15 @@ class CalamariPredictor:
 
     def __init__(self, device, voter, checkpoint_dir):
         self.logger = logging.getLogger("ocrd.processor.CalamariPredictor")
+        #self.logger.setLevel(logging.DEBUG)
         ctxt = mp.get_context('spawn') # not necessary to fork, and spawn is safer
         self.taskq = ctxt.Queue(maxsize=3 + config.OCRD_MAX_PARALLEL_PAGES * 200) # 3 + npages * nlines
         self.resultq = ctxt.Queue(maxsize=3 + config.OCRD_MAX_PARALLEL_PAGES * 200)
         self.terminate = ctxt.Event() # will be shared across all page workers forked from this process
+        self.fill = ctxt.Lock() # to switch on/off filling up batches in the continuous generator
         self.workers = [
             CalamariPredictor.PredictWorker(self.logger, device, voter, checkpoint_dir,
-                                            self.taskq, self.resultq, self.terminate)
+                                            self.taskq, self.resultq, self.terminate, self.fill)
         ]
         atexit.register(self.shutdown) # sets self.terminate (on exception or gc)
         for p in self.workers:
