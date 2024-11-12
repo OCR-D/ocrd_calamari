@@ -23,7 +23,7 @@ jobs:
       - run: pip3 install --upgrade pip
       - run: 
           name: install dependencies and package
-          command: make install deps-test-ubuntu PIP_INSTALL="pip3 install"
+          command: make deps-test-ubuntu install PIP_INSTALL="pip3 install"
       - run: 
           name: run regression test and coverage test
           command: make coverage
