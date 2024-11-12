@@ -4,11 +4,11 @@ from typing import Optional
 from functools import cached_property
 import itertools
 from glob import glob
-import atexit
 import queue
 import multiprocessing as mp
 from threading import Thread
 import logging
+import weakref
 
 import numpy as np
 import cv2 as cv
@@ -638,22 +638,21 @@ class CalamariPredictor:
         self.resultq = ctxt.Queue(maxsize=3 + config.OCRD_MAX_PARALLEL_PAGES * 200)
         self.terminate = ctxt.Event() # will be shared across all page workers forked from this process
         self.fill = ctxt.Lock() # to switch on/off filling up batches in the continuous generator
-        self.workers = [
-            CalamariPredictor.PredictWorker(self.logger, device, voter, checkpoint_dir,
-                                            self.taskq, self.resultq, self.terminate, self.fill)
-        ]
-        atexit.register(self.shutdown) # sets self.terminate (on exception or gc)
-        for p in self.workers:
-            p.start()
-        id_, self.network_input_channels = self.resultq.get() # block
+        # spawn single Calamari subprocess prior to base Processor forking any page worker subprocesses
+        CalamariPredictor.PredictWorker(self.logger, device, voter, checkpoint_dir,
+                                        self.taskq, self.resultq, self.terminate, self.fill).start()
+        id_, self.network_input_channels = self.resultq.get() # block until initialized
         assert id_ == "input_channels" # sole possible task during setup/init
         if isinstance(self.network_input_channels, Exception):
             raise self.network_input_channels
         self.logger.info("Loaded model")
-        # prior to base Processor forking page workers, ensure we can sync
-        # multiple CalamariPredictors communicating with the same PredictWorker:
+        # ensure multiple CalamariPredictor instances sync communicating with the same PredictWorker:
         mgr = mp.get_context("fork").Manager() # base.Processor will fork workers
         self.results = mgr.dict() # {}
+        weakref.finalize(self, self.shutdown)
+
+    def __del__(self):
+        self.shutdown() # sets self.terminate (on exception or gc)
 
     def __call__(self, image, line_id, page_id):
         self.taskq.put((page_id, line_id, image))
