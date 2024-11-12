@@ -1,9 +1,10 @@
 from multiprocessing import Process
 from time import sleep
+import gc
 import pytest
 
 from ocrd import Resolver, Workspace, OcrdMetsServer
-from ocrd_utils import pushd_popd, disableLogging, initLogging, setOverrideLogLevel, config
+from ocrd_utils import pushd_popd, initLogging, disableLogging, setOverrideLogLevel, getLogger, config
 
 from .assets import assets
 
@@ -38,9 +39,12 @@ def workspace(tmpdir, pytestconfig, request):
                 workspace = Workspace(resolver, directory, mets_server_url='mets.sock')
                 yield {'workspace': workspace, 'mets_server_url': 'mets.sock'}
                 process.terminate()
+                process.join()
             else:
                 yield {'workspace': workspace}
+        disableLogging()
         config.reset_defaults()
+        gc.collect()
     return _make_workspace
 
 
