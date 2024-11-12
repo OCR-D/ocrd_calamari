@@ -430,6 +430,7 @@ class CalamariPredictor:
                 generator = iter(generator())
                 self.put(("input_channels", predictor.data.params.input_channels))
             except Exception as e:
+                self.logger.exception("setup failed")
                 self.put(("input_channels", e))
                 # unrecoverable
                 self.terminate.set()
