@@ -28,7 +28,7 @@ def assertFileDoesNotContain(fn, text, msg=""):
 
 def test_recognize(workspace_aufklaerung_binarized, caplog):
     caplog.set_level(logging.WARNING)
-    ws = workspace_aufklaerung_binarized['workspace']
+    ws = workspace_aufklaerung_binarized
     page1 = ws.mets.physical_pages[0]
     file1 = list(ws.find_files(file_grp="OCR-D-GT-WORD", page_id=page1, mimetype=PAGE))[0]
     text1 = page_from_file(file1).etree.xpath(
@@ -42,7 +42,7 @@ def test_recognize(workspace_aufklaerung_binarized, caplog):
         parameter={
             "checkpoint_dir": CHECKPOINT_DIR,
         },
-        **workspace_aufklaerung_binarized,
+        workspace=ws,
     )
     overwrite_text_log_messages = [t[2] for t in caplog.record_tuples
                                    if "already contained text results" in t[2]]
@@ -61,16 +61,14 @@ def test_recognize(workspace_aufklaerung_binarized, caplog):
     assert "\n".join(text1_out) != "\n".join(text1), "result is suspiciously identical to GT"
 
 
-def test_recognize_rgb(
-    workspace_aufklaerung, caplog
-):
+def test_recognize_rgb(workspace_aufklaerung, caplog):
     caplog.set_level(logging.WARNING)
     run_processor(
         CalamariRecognize,
         input_file_grp="OCR-D-GT-PAGE",
         output_file_grp="OCR-D-OCR-CALAMARI",
         parameter={"checkpoint_dir": CHECKPOINT_DIR},
-        **workspace_aufklaerung,
+        workspace=workspace_aufklaerung,
     )
     interesting_log_messages = [t[2] for t in caplog.record_tuples
                                 if "Using raw image" in t[2]]
@@ -86,9 +84,9 @@ def test_words(workspace_aufklaerung_binarized):
             "checkpoint_dir": CHECKPOINT_DIR,
             "textequiv_level": "word",
         },
-        **workspace_aufklaerung_binarized
+        workspace=workspace_aufklaerung_binarized
     )
-    ws = workspace_aufklaerung_binarized['workspace']
+    ws = workspace_aufklaerung_binarized
     ws.save_mets()
     page1 = ws.mets.physical_pages[0]
     file1 = next(ws.find_files(file_grp="OCR-D-OCR-CALAMARI", page_id=page1, mimetype=PAGE), False)
@@ -128,9 +126,9 @@ def test_glyphs(workspace_aufklaerung_binarized):
             "checkpoint_dir": CHECKPOINT_DIR,
             "textequiv_level": "glyph",
         },
-        **workspace_aufklaerung_binarized,
+        workspace=workspace_aufklaerung_binarized,
     )
-    ws = workspace_aufklaerung_binarized['workspace']
+    ws = workspace_aufklaerung_binarized
     ws.save_mets()
     page1 = ws.mets.physical_pages[0]
     file1 = next(ws.find_files(file_grp="OCR-D-OCR-CALAMARI", page_id=page1, mimetype=PAGE), False)

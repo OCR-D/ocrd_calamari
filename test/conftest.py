@@ -37,11 +37,11 @@ def workspace(tmpdir, pytestconfig, request):
                 process.start()
                 sleep(1)
                 workspace = Workspace(resolver, directory, mets_server_url='mets.sock')
-                yield {'workspace': workspace, 'mets_server_url': 'mets.sock'}
+                yield workspace
                 process.terminate()
                 process.join()
             else:
-                yield {'workspace': workspace}
+                yield workspace
         disableLogging()
         config.reset_defaults()
         gc.collect()
