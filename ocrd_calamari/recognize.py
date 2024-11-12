@@ -221,9 +221,9 @@ class CalamariRecognize(Processor):
         self.logger.debug("Sending line image for page '%s' line '%s'", page_id, line.id)
         result = self.predictor(line_image, line.id, page_id)
         self.logger.debug("Received line result for page '%s' line '%s'", page_id, line.id)
-        self._post_process_line(line, line_coords, result)
+        self._post_process_line(line, line_image.shape[0], line_coords, result)
 
-    def _post_process_line(self, line, line_coords, result):
+    def _post_process_line(self, line, line_height, line_coords, result):
         _, prediction = result
 
         # Build line text on our own
@@ -339,7 +339,7 @@ class CalamariRecognize(Processor):
                     word_end = word_positions[-1].global_end
 
                     polygon = polygon_from_x0y0x1y1(
-                        [word_start, 0, word_end, line_image.height]
+                        [word_start, 0, word_end, line_height]
                     )
                     points = points_from_polygon(
                         coordinates_for_segment(polygon, None, line_coords)
@@ -362,7 +362,7 @@ class CalamariRecognize(Processor):
                                     glyph_start,
                                     0,
                                     glyph_end,
-                                    line_image.height,
+                                    line_height,
                                 ]
                             )
                             points = points_from_polygon(
@@ -577,7 +577,6 @@ class CalamariPredictor:
                         for sample in running_samples_generator:
                             #print(f"feeding another input {sample.meta} len={sample.inputs['img'].shape[0]}")
                             yield sample
-                        #print(f"closing generator")
                         running_samples_generator.close()
                     dataset = self._create_tf_dataset_generator().create(generator, False)
                     def print_fn(*x):
