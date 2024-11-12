@@ -1,7 +1,6 @@
 pytest
 coverage
 pytest-cov
-pytest-isolate
 pytest-mypy
 types-setuptools
 black
