@@ -10,7 +10,7 @@ from ocrd_models.constants import NAMESPACES as NS
 from ocrd_modelfactory import page_from_file
 from ocrd_calamari import CalamariRecognize
 
-CHECKPOINT_DIR = os.getenv("MODEL", "qurator-gt4histocr-1.0")
+CHECKPOINT_DIR = os.getenv("MODEL", "fraktur_19th_century")
 DEBUG = os.getenv("DEBUG", False)
 
 
