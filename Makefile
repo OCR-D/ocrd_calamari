@@ -92,6 +92,7 @@ test: test/assets $(MODEL)
 coverage: test/assets $(MODEL)
 	coverage erase
 	make test PYTHON="coverage run"
+	coverage combine
 	coverage report
 	coverage html
 

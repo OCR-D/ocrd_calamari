@@ -76,6 +76,10 @@ branch = true
 source = [
     "ocrd_calamari"
 ]
+concurrency = [
+    "thread",
+    "multiprocessing"
+]
 
 [tool.coverage.report]
 exclude_also = [
