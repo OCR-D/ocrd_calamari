@@ -1,6 +1,6 @@
 version: 2.1
 orbs:
-  codecov: codecov/codecov@3.3.0
+  codecov: codecov/codecov@5.0.3
 
 jobs:
   test:
@@ -24,15 +24,17 @@ jobs:
       - run: 
           name: install dependencies and package
           command: make deps-test-ubuntu install PIP_INSTALL="pip3 install"
+      - save_cache:
+          key: v01-pydeps-<< parameters.python-image >>-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}
+          paths:
+            - "~/.cache/pip"
       - run: 
           name: run regression test and coverage test
           command: make coverage
           no_output_timeout: 30m
       - codecov/upload
-      - save_cache:
-          key: v01-pydeps-<< parameters.python-image >>-{{ checksum "requirements.txt" }}-{{ checksum "requirements-dev.txt" }}
-          paths:
-            - "~/.cache/pip"
+      - store_artifacts:
+        path: htmlcov
     resource_class: large
 
 workflows:
