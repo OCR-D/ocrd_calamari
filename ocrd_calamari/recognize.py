@@ -4,7 +4,6 @@ from typing import Optional
 from functools import cached_property
 import itertools
 from glob import glob
-import queue
 import multiprocessing as mp
 from threading import Thread
 import logging
@@ -416,7 +415,7 @@ class CalamariPredictor:
                 try:
                     self.resultq.put(result, timeout=0.3)
                     return
-                except queue.Full:
+                except mp.queues.Full:
                     continue
             page_id = result[0]
             if page_id != "none":
@@ -555,7 +554,7 @@ class CalamariPredictor:
                     while not self.params.terminate.is_set():
                         try:
                             page_id, line_id, image = self.params.taskq.get(timeout=1.1)
-                        except queue.Empty:
+                        except mp.queues.Empty:
                             # anyone currently awaiting results?
                             if self.params.fill.acquire(block=False):
                                 self.params.fill.release() # not needed
@@ -673,7 +672,7 @@ class CalamariPredictor:
             #self.logger.debug("awaiting result for page '%s' line '%s'", page_id, line_id)
             try:
                 page_id1, line_id1, result = self.resultq.get(timeout=0.7)
-            except queue.Empty:
+            except mp.queues.Empty:
                 continue
             # FIXME what if page_id == line_id == "" and result is an exception??
             self.logger.debug("storing results  for page '%s' line '%s'", page_id1, line_id1)
@@ -688,12 +687,14 @@ class CalamariPredictor:
         raise Exception("predictor terminated prematurely") from err
 
     def shutdown(self):
-        self.terminate.set()
-        # while not self.taskq.empty():
-        #     page_id, _, _ = self.taskq.get()
-        #     self.logger.warning("dropped task for page %s", page_id)
-        self.taskq.close()
-        self.taskq.cancel_join_thread()
+        # do not terminate from forked processor instances
+        if mp.parent_process() is None:
+            self.terminate.set()
+            # while not self.taskq.empty():
+            #     page_id, _, _ = self.taskq.get()
+            #     self.logger.warning("dropped task for page %s", page_id)
+            self.taskq.close()
+            self.taskq.cancel_join_thread()
 
 
 # TODO: This is a copy of ocrd_tesserocr's function, and should probably be moved to a
