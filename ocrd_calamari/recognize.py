@@ -525,6 +525,8 @@ class CalamariPredictor:
                     inputs, meta = inputs
                     return inputs, predictor._keras_model(inputs), meta
             predictor.model = WrappedModel()
+            predictor.model.compile()
+            predictor.model.make_predict_function()
             # for preproc in predictor.data.params.pre_proc.processors:
             #     self.logger.info("preprocessor: %s", str(preproc))
             predictor.voter = predictor.create_voter(predictor.data.params)
@@ -607,8 +609,10 @@ class CalamariPredictor:
             def predict_dataset(dataset):
                 for batch in dataset:
                     #ids = sync_to_numpy_or_python_type(batch[1]['meta'])
-                    #ids = [json.loads(l[0])['id'][1] for l in ids]
-                    #print(f"batch size: {batch[0]['img'].shape} {ids.count('none')/len(ids)*100}%")
+                    #ids = [':'.join(json.loads(l[0])['id']) for l in ids]
+                    #shape = sync_to_numpy_or_python_type(batch[0]['img'].shape)
+                    #print(f"batch shape: {shape} {ids.count('none:none')/len(ids)*100}%")
+                    #print(' '.join(ids))
                     r = predictor.model.predict_on_batch(batch)
                     inputs, outputs, meta = sync_to_numpy_or_python_type(r)
                     for sample in predictor._unwrap_batch(inputs, {}, outputs, meta):
