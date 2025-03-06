@@ -10,6 +10,9 @@ MODEL = fraktur_19th_century
 export MODEL # needed for pytest model selection
 EXAMPLE = actevedef_718448162.first-page+binarization+segmentation
 
+DOCKER_TAG = 'ocrd/calamari'
+DOCKER_BASE_IMAGE = docker.io/ocrd/core-cuda-torch:v3.1.0
+
 # BEGIN-EVAL makefile-parser --make-help Makefile
 
 help:
@@ -17,7 +20,10 @@ help:
 	@echo "  Targets"
 	@echo ""
 	@echo "    install          Install ocrd_calamari"
-	@echo "    $(MODEL)         Get Calamari model (from SBB)"
+	@echo "    install-dev      Install in editable mode"
+	@echo "    build            Build source and binary distribution"
+	@echo "    docker           Build Docker image"
+	@echo "    $(MODEL)         Get Calamari model for tests"
 	@echo "    example          Download example data"
 	@echo "    deps-test        Install testing python deps via pip"
 	@echo "    repo/assets      Clone OCR-D/assets to ./repo/assets"
@@ -28,6 +34,7 @@ help:
 	@echo ""
 	@echo "  Variables"
 	@echo ""
+	@echo "    DOCKER_TAG   '$(DOCKER_TAG)'"
 	@echo "    PYTHON       '$(PYTHON)'"
 	@echo "    PIP_INSTALL  '$(PIP_INSTALL)'"
 	@echo "    GIT_CLONE    '$(GIT_CLONE)'"
@@ -39,6 +46,20 @@ help:
 install:
 	$(PIP_INSTALL) .
 
+install-dev:
+	$(PIP_INSTALL) -e .
+
+build:
+	$(PIP_INSTALL) build
+	$(PYTHON) -m build .
+
+# Build docker image
+docker:
+	docker build \
+	--build-arg DOCKER_BASE_IMAGE=$(DOCKER_BASE_IMAGE) \
+	--build-arg VCS_REF=$$(git rev-parse --short HEAD) \
+	--build-arg BUILD_DATE=$$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+	-t $(DOCKER_TAG) .
 
 # Get GT4HistOCR Calamari model (from SBB)
 
@@ -96,4 +117,4 @@ coverage: test/assets $(MODEL)
 	coverage report
 	coverage html
 
-.PHONY: install assets-clean deps-test test coverage $(MODEL) example
+.PHONY: install install-dev build docker assets-clean deps-test test coverage $(MODEL) example
