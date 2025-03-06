@@ -29,7 +29,6 @@ classifiers = [
 
 [project.scripts]
 ocrd-calamari-recognize = "ocrd_calamari.cli:ocrd_calamari_recognize"
-fix-calamari1-model = "ocrd_calamari.fix_calamari1_model:fix_calamari1_model"
 
 [project.urls]
 Homepage = "https://github.com/OCR-D/ocrd_calamari"
@@ -40,9 +39,9 @@ Repository = "https://github.com/OCR-D/ocrd_calamari.git"
 dependencies = {file = ["requirements.txt"]}
 optional-dependencies.dev = {file = ["requirements-dev.txt"]}
 
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["ocrd_calamari"]
+[tool.setuptools]
+packages = ["ocrd_calamari"]
+package-data = {"*" = ["ocrd-tool.json"]}
 
 [tool.pytest.ini_options]
 minversion = 6.0
