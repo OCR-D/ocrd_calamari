@@ -525,7 +525,9 @@ class CalamariPredictor:
                     inputs, meta = inputs
                     return inputs, predictor._keras_model(inputs), meta
             predictor.model = WrappedModel()
-            predictor.model.compile()
+            # FIXME: sometimes predict_on_batch hangs below when in graph mode
+            #        eager mode seems to avoid that, but is less efficient
+            predictor.model.compile(run_eagerly=True)
             predictor.model.make_predict_function()
             # for preproc in predictor.data.params.pre_proc.processors:
             #     self.logger.info("preprocessor: %s", str(preproc))
