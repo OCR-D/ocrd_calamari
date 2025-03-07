@@ -15,6 +15,9 @@ DOCKER_BASE_IMAGE = docker.io/ocrd/core-cuda-tf2:v3.1.1
 
 # BEGIN-EVAL makefile-parser --make-help Makefile
 
+DOCKER_BASE_IMAGE = docker.io/ocrd/core-cuda-tf2:v2.70.0
+DOCKER_TAG = 'ocrd/calamari'
+
 help:
 	@echo ""
 	@echo "  Targets"
@@ -31,14 +34,16 @@ help:
 	@echo "    assets-clean     Remove symlinks in test/assets"
 	@echo "    test             Run unit tests"
 	@echo "    coverage         Run unit tests and determine test coverage"
+	@echo "    docker           Build Docker image"
 	@echo ""
 	@echo "  Variables"
 	@echo ""
-	@echo "    DOCKER_TAG   '$(DOCKER_TAG)'"
-	@echo "    PYTHON       '$(PYTHON)'"
-	@echo "    PIP_INSTALL  '$(PIP_INSTALL)'"
-	@echo "    GIT_CLONE    '$(GIT_CLONE)'"
-	@echo "    MODEL        '$(MODEL)'"
+	@echo "    PYTHON            '$(PYTHON)'"
+	@echo "    PIP_INSTALL       '$(PIP_INSTALL)'"
+	@echo "    GIT_CLONE         '$(GIT_CLONE)'"
+	@echo "    MODEL             '$(MODEL)'"
+	@echo "    DOCKER_TAG        '$(DOCKER_TAG)'"
+	@echo "    DOCKER_BASE_IMAGE '$(DOCKER_BASE_IMAGE)'"
 
 # END-EVAL
 
