@@ -1,9 +1,10 @@
-ARG DOCKER_BASE_IMAGE
+ARG DOCKER_BASE_IMAGE=docker.io/ocrd/core-cuda-tf2
 FROM $DOCKER_BASE_IMAGE
-ARG VCS_REF
-ARG BUILD_DATE
+ARG DOCKER_BASE_IMAGE=docker.io/ocrd/core-cuda-tf2
+ARG VCS_REF=unknown
+ARG BUILD_DATE=unknown
 LABEL \
-    maintainer="https://ocr-d.de/kontakt" \
+    maintainer="https://ocr-d.de/en/contact" \
     org.label-schema.vcs-ref=$VCS_REF \
     org.label-schema.vcs-url="https://github.com/OCR-D/ocrd_calamari" \
     org.label-schema.build-date=$BUILD_DATE \
@@ -14,7 +15,7 @@ LABEL \
     org.opencontainers.image.documentation="https://github.com/OCR-D/ocrd_calamari/blob/${VCS_REF}/README.md" \
     org.opencontainers.image.revision=$VCS_REF \
     org.opencontainers.image.created=$BUILD_DATE \
-    org.opencontainers.image.base.name=ocrd/core-cuda-tf2
+    org.opencontainers.image.base.name=$DOCKER_BASE_IMAGE
 
 ENV DEBIAN_FRONTEND noninteractive
 ENV PYTHONIOENCODING utf8
