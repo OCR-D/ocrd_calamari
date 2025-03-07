@@ -11,7 +11,7 @@ export MODEL # needed for pytest model selection
 EXAMPLE = actevedef_718448162.first-page+binarization+segmentation
 
 DOCKER_TAG = 'ocrd/calamari'
-DOCKER_BASE_IMAGE = docker.io/ocrd/core-cuda-torch:v3.1.0
+DOCKER_BASE_IMAGE = docker.io/ocrd/core-cuda-tf2:v3.1.1
 
 # BEGIN-EVAL makefile-parser --make-help Makefile
 
