@@ -29,18 +29,13 @@ ENV XDG_DATA_HOME /usr/local/share
 # (i.e. XDG_CONFIG_HOME/ocrd/resources.yml)
 ENV XDG_CONFIG_HOME /usr/local/share/ocrd-resources
 
-WORKDIR /build-ocrd
-COPY Makefile .
-COPY pyproject.toml .
-COPY ocrd-tool.json .
-COPY requirements.txt .
-COPY README.md .
-COPY ocrd_calamari ocrd_calamari
+WORKDIR /build/ocrd_calamari
+COPY . .
 
 # prepackage ocrd-tool.json as ocrd-all-tool.json
-RUN ocrd ocrd-tool ocrd-tool.json dump-tools > $(dirname $(ocrd bashlib filename))/ocrd-all-tool.json
+RUN ocrd ocrd-tool ocrd_calamari/ocrd-tool.json dump-tools > $(dirname $(ocrd bashlib filename))/ocrd-all-tool.json
 # install everything and reduce image size
-RUN make install && rm -fr /build-ocrd
+RUN make install && rm -fr /build/ocrd_calamari
 
 WORKDIR /data
 VOLUME /data
