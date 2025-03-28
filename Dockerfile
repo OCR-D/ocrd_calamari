@@ -27,9 +27,11 @@ COPY ocrd-tool.json .
 COPY requirements.txt .
 COPY README.md .
 COPY ocrd_calamari ./ocrd_calamari
-RUN make install
-RUN rm -rf /build/calamari
+RUN make install && \
+    rm -rf /build/calamari
 
+RUN ocrd resmgr download -l system ocrd-calamari-recognize qurator-gt4histocr-1.0 && \
+    rm -rf /tmp/ocrd_*
 
 WORKDIR /data
 VOLUME ["/data"]
