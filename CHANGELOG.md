@@ -5,6 +5,8 @@ Versioned according to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+## [2.0.0] - 2025-03-31
+
 Changed:
 
   - :fire: Upgrade calamari API to v2, #118
