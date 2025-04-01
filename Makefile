@@ -15,9 +15,6 @@ DOCKER_BASE_IMAGE = docker.io/ocrd/core-cuda-tf2:v3.1.1
 
 # BEGIN-EVAL makefile-parser --make-help Makefile
 
-DOCKER_BASE_IMAGE = docker.io/ocrd/core-cuda-tf2:v2.70.0
-DOCKER_TAG = 'ocrd/calamari'
-
 help:
 	@echo ""
 	@echo "  Targets"
