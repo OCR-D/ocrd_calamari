@@ -5,6 +5,10 @@ Versioned according to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+Fixed:
+
+  - Remove duplicate `DOCKER_BASE_IMAGE` assignment, #123
+
 ## [2.0.0] - 2025-03-31
 
 Changed:
