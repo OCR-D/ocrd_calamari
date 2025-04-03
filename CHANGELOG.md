@@ -5,6 +5,8 @@ Versioned according to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+## [2.0.1] - 2025-04-03
+
 Fixed:
 
   - Remove duplicate `DOCKER_BASE_IMAGE` assignment, #123
@@ -29,4 +31,5 @@ Removed:
 
 
 <!-- link-labels -->
+[2.0.1]: ../../compare/v2.0.1...v2.0.0
 [2.0.0]: ../../compare/HEAD...v2.0.0

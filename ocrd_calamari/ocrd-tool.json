@@ -1,7 +1,7 @@
 {
   "git_url": "https://github.com/OCR-D/ocrd_calamari",
   "dockerhub": "ocrd/calamari",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "tools": {
     "ocrd-calamari-recognize": {
       "executable": "ocrd-calamari-recognize",
