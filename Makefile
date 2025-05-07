@@ -10,8 +10,9 @@ MODEL = fraktur_19th_century
 export MODEL # needed for pytest model selection
 EXAMPLE = actevedef_718448162.first-page+binarization+segmentation
 
-DOCKER_TAG = 'ocrd/calamari'
-DOCKER_BASE_IMAGE = docker.io/ocrd/core-cuda-tf2:v3.1.1
+DOCKER_TAG ?= 'ocrd/calamari'
+DOCKER_BASE_IMAGE ?= docker.io/ocrd/core-cuda-tf2:latest
+DOCKER ?= docker
 
 # BEGIN-EVAL makefile-parser --make-help Makefile
 
@@ -57,7 +58,7 @@ build:
 
 # Build docker image
 docker:
-	docker build \
+	$(DOCKER) build \
 	--build-arg DOCKER_BASE_IMAGE=$(DOCKER_BASE_IMAGE) \
 	--build-arg VCS_REF=$$(git rev-parse --short HEAD) \
 	--build-arg BUILD_DATE=$$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
