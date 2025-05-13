@@ -4,4 +4,4 @@ protobuf < 4.0  # XXX https://github.com/OCR-D/ocrd_calamari/issues/89
 calamari-ocr == 1.0.*
 setuptools >= 41.0.0  # tensorboard depends on this, but why do we get an error at runtime?
 click
-ocrd >= 2.22.0
+ocrd >= 3.4

@@ -1,0 +1,10 @@
+pytest
+coverage
+pytest-cov
+pytest-mypy
+types-setuptools
+black
+pre-commit
+
+ruff ; python_version >= "3.7"
+pytest-ruff ; python_version >= "3.7"
